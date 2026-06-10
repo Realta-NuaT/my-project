@@ -121,6 +121,11 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
                 .one();
     }
 
+    @Override
+    public Account findAccountById(int id) {
+        return this.query().eq("id",id).one();
+    }
+
     private boolean existsAccountByEmail(String email) {
         return this.baseMapper.exists(Wrappers.<Account>query().eq("email",email));
     }

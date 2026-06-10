@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.utils.Const;
 import org.example.utils.JwtUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,7 +18,7 @@ import java.io.IOException;
 
 
 @Component
-public class JwtAuthorizeFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Resource
     private JwtUtils jwtUtils;
@@ -45,7 +46,7 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
             // 3.4 【核心】将认证信息存入Spring Security上下文，后续接口可直接获取当前登录用户
             SecurityContextHolder.getContext().setAuthentication(authentication);
             // 3.5 将用户ID存入request域，方便Controller中直接通过@RequestAttribute获取
-            request.setAttribute("id", jwtUtils.toId(jwt));
+            request.setAttribute(Const.ATTR_USER_ID, jwtUtils.toId(jwt));
         }
         // 4. 放行请求，继续执行后面的过滤器/控制器
         filterChain.doFilter(request, response);
