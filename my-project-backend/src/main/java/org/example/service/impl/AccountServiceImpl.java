@@ -4,9 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.Account;
-import org.example.entity.vo.request.ConfirmResetVO;
-import org.example.entity.vo.request.EmailRegisterVO;
-import org.example.entity.vo.request.EmailResetVO;
+import org.example.entity.vo.request.*;
 import org.example.mapper.AccountMapper;
 import org.example.service.AccountService;
 import org.example.utils.Const;
@@ -68,7 +66,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         String email = vo.getEmail();
         String username = vo.getUsername();
         String key = Const.VERIFY_EMAIL_DATA + email;
-        String code = stringRedisTemplate.opsForValue().get(key);
+        String code = this.getEmailVerifyCode(email);
         if(code == null)  return "请先获取验证码";
         if(!code.equals(vo.getCode())) return "验证码输入错误,请重新输入";
         if(this.existsAccountByEmail(email)) return "此电子邮件已被其他用户注册";
@@ -76,7 +74,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         String password = passwordEncoder.encode(vo.getPassword());
         Account account = new Account(null,username,password,email,"user",new Date());
         if (this.save(account)) {
-            stringRedisTemplate.delete(key);
+             this.deleteEmailVerifyCode(email);
              return null;
         }else{
             return "内部错误,请联系管理员";
@@ -87,8 +85,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
 
     @Override
     public String resetConfirm(ConfirmResetVO vo) {
-        String email = vo.getEmail();
-        String code = stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA + email);
+        String code = this.getEmailVerifyCode(vo.getEmail());
         if(code == null){
             return "请先获取验证码";
         }
@@ -96,6 +93,41 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
             return "验证码输入有误,请重新输入";
         }
         return null;
+    }
+
+    @Override
+    public String modifyEmail(int id, ModifyEmailVO vo){
+        String email = vo.getEmail();
+        String code = this.getEmailVerifyCode(email);
+        if(code == null){
+            return "请先获取验证码";
+        }
+        if(!code.equals(vo.getCode())){
+            return "验证码输入有误,请重新输入";
+        }
+        this.deleteEmailVerifyCode(email);
+        Account account = this.findAccountByUsernameOrEmail(email);
+        if(account == null){
+            this.update()
+                    .set("email",email)
+                    .eq("id",id)
+                    .update();
+            return null;
+        }
+        return "该邮件已被其他账号使用,无法完成此操作";
+    }
+
+    @Override
+    public String changePassword(int id, ChangePasswordVO vo) {
+        String password = this.query().eq("id",id).one().getPassword();
+        if(!passwordEncoder.matches(vo.getPassword(), password)){
+            return "原密码错误,请重新输入!";
+        }
+        boolean success = this.update()
+                .eq("id",id)
+                .set("password",passwordEncoder.encode(vo.getNew_password()))
+                .update();
+        return success ? null : "未知错误,请联系管理员";
     }
 
     @Override
@@ -108,7 +140,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
                 set("password",password).
                 update();
         if(update) {
-            stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA + email);
+            this.deleteEmailVerifyCode(email);
         }
 
         return null;
@@ -134,7 +166,12 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         return this.baseMapper.exists(Wrappers.<Account>query().eq("Username",Username));
     }
 
-
+    private String getEmailVerifyCode(String email) {
+        return stringRedisTemplate.opsForValue().get(Const.VERIFY_EMAIL_DATA + email);
+    }
+    private void deleteEmailVerifyCode(String email) {
+        stringRedisTemplate.delete(Const.VERIFY_EMAIL_DATA + email);
+    }
     private boolean varifyLimit(String address){
         String key = Const.VERIFY_EMAIL_LIMIT + address;
         return flowUtils.limitOnceCheck(key,60);

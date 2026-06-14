@@ -1,6 +1,7 @@
 import axios from "axios"
 import {ElMessage} from "element-plus"
 
+
 const authItemName = "access_token"
 
 const defaultFailure=(message,code,url)=>{
@@ -75,7 +76,7 @@ function  login(username,password,remember,success,failure=defaultFailure){
         'content-type': 'application/x-www-form-urlencoded',
     },(data)=>{
         storeAccessToken(data.token,remember,data.expire)
-        ElMessage.success(`登录成功,欢迎${username}来到我们的系统`)
+        ElMessage.success(`登录成功,欢迎${data.username}来到我们的系统`)
         success(data.data)
     },failure)
 }
