@@ -1,5 +1,6 @@
 import axios from "axios"
 import {ElMessage} from "element-plus"
+import router from "@/router/index.js";
 
 
 const authItemName = "access_token"
@@ -92,4 +93,32 @@ function unauthorized(){
     return !takeAccessToken()
 }
 
-export {login,logout,get,post,unauthorized,takeAccessToken}
+let isRefreshing = false
+axios.interceptors.response.use(
+    response => response,
+    async error => {
+        const { config, response } = error
+        if (response?.status === 401) {
+            // 如果正在刷新 token，就等刷新结束后重试请求，不要直接跳转
+            if (!isRefreshing) {
+                isRefreshing = true
+                try {
+                    // 尝试用 refresh token 刷新 access token（如果有的话）
+                    // const newToken = await refreshAccessToken()
+                    // 若刷新成功，更新本次请求的 token 并重试
+                    // config.headers.Authorization = `Bearer ${newToken}`
+                    // return request(config)
+                    // 若无刷新逻辑，直接清除并跳转
+                    deleteAccessToken()
+                    router.push('/')
+                    ElMessage.error('登录已失效，请重新登录')
+                } finally {
+                    isRefreshing = false
+                }
+            }
+        }
+        return Promise.reject(error)
+    }
+)
+
+export {login,logout,get,post,unauthorized,takeAccessToken,accessHeader}
