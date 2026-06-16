@@ -36,7 +36,7 @@ public class WeatherServiceImpl implements WeatherService {
         if(geo == null) return null;
         JSONObject location = geo.getJSONObject("location");
         int id = location.getInteger("id");
-        String key = "weather"+id;
+        String key = "weather:"+id;
         String cache = template.opsForValue().get(key);
         if(cache != null)
             return JSONObject.parseObject(cache).to(WeatherVO.class);
