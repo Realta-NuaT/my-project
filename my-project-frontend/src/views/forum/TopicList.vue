@@ -1,15 +1,54 @@
 <script setup>
 
-import Card from "@/components/Card.vue";
 import LightCard from "@/components/LightCard.vue";
 import {Calendar, CollectionTag, EditPen, Link} from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed} from "vue";
+import {computed, reactive, ref} from "vue";
+import {get} from "@/net/index.js";
+import {ElMessage} from "element-plus";
+import TopicEditor from "@/components/TopicEditor.vue";
 
+const weather = reactive({
+  location: {},
+  now:{},
+  hourly:[],
+  success: false
+})
+const editor = ref(false)
 
 const today = computed(()=>{
   const date = new Date();
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+})
+
+
+navigator.geolocation.getCurrentPosition(position => {
+  const longitude = position.coords.longitude;
+  const latitude = position.coords.latitude;
+  get(`/api/forum/weather?longitude=${longitude}&latitude=${latitude}`, data =>{
+    Object.assign(weather, data)
+    weather.success = true;
+  })
+  }, error =>{
+    console.log(error);
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        ElMessage.warning('未允许获取位置信息，已使用默认位置')
+        break
+      case error.TIMEOUT:
+        ElMessage.warning('定位超时，已使用默认位置')
+        break
+      default:
+        ElMessage.warning('定位失败，已使用默认位置')
+    }
+    get('/api/forum/weather?longitude=118.280350&latitude=35.121960',data => {
+      Object.assign(weather, data)
+      weather.success = true;
+    })
+  },{
+  timeout: 8000, // 延长超时到8秒，减少误判
+  enableHighAccuracy: true, // 高精度，提升定位精确率
+  maximumAge: 300000 // 允许复用5分钟内缓存定位
 })
 
 </script>
@@ -18,7 +57,7 @@ const today = computed(()=>{
   <div style="display: flex; margin: 20px auto; gap: 20px; max-width: 900px;">
     <div style="flex: 1">
       <light-card>
-        <div class="create-topic">
+        <div class="create-topic" @click="editor = true">
           <el-icon><edit-pen/></el-icon>点击发表主题...
         </div>
       </light-card>
@@ -47,7 +86,7 @@ const today = computed(()=>{
             天气信息
           </div>
           <el-divider style="margin: 10px 0"/>
-          <Weather/>
+          <Weather :data="weather"/>
         </light-card>
         <light-card style="margin-top: 10px">
           <div class="info-text">
@@ -77,6 +116,7 @@ const today = computed(()=>{
         </div>
       </div>
     </div>
+    <topic-editor :show="editor" @close="editor = false"/>
   </div>
 </template>
 

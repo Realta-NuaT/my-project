@@ -67,3 +67,7 @@
 2026-06-16 15:34:33.056  INFO 11548 --- [http-nio-8080-exec-10] (379615394039730176) org.example.filter.RequestLogFilter      : 请求处理耗时: 2ms | 响应结果: {"code":401,"data":null,"message":"Full authentication is required to access this resource"}
 2026-06-16 15:34:33.066  INFO 11548 --- [http-nio-8080-exec-1] (379615394090061824) org.example.filter.RequestLogFilter      : 请求URL: "/api/user/info" (GET) | 远程IP地址: 0:0:0:0:0:0:0:1 │ 身份: admin (UID: 4) | 角色: [ROLE_user] | 请求参数列表: {}
 2026-06-16 15:34:33.074  INFO 11548 --- [http-nio-8080-exec-1] (379615394090061824) org.example.filter.RequestLogFilter      : 请求处理耗时: 8ms | 响应结果: {"code":200,"data":{"username":"admin","email":"1430220206@qq.com","role":"user","avatar":"/avatar/2983c64efe0c499cb90cc13d7545f5ec","registerTime":"2026-06-15T13:27:10.000+00:00"},"message":"请求成功"}
+2026-06-16 21:05:52.300  INFO 11548 --- [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] (system) o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2026-06-16 21:05:52.470  INFO 11548 --- [org.springframework.amqp.rabbit.RabbitListenerEndpointContainer#0-2] (system) o.s.a.r.l.SimpleMessageListenerContainer : Successfully waited for workers to finish.
+2026-06-16 21:05:52.574  INFO 11548 --- [SpringApplicationShutdownHook] (system) com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-06-16 21:05:52.582  INFO 11548 --- [SpringApplicationShutdownHook] (system) com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

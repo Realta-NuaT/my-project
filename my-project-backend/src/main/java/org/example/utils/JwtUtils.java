@@ -7,6 +7,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * 用于处理Jwt令牌的工具类
  */
+@Slf4j
 @Component
 public class JwtUtils {
 
@@ -112,6 +114,10 @@ public class JwtUtils {
             Map<String, Claim> claims = verify.getClaims();
             return new Date().after(claims.get("exp").asDate()) ? null : verify;
         } catch (JWTVerificationException e) {
+            // 输出详细异常信息，包括异常消息和堆栈（调试时可开堆栈，生产可只打消息）
+            log.warn("JWT 校验失败: {}", e.getMessage());
+            // 如果需要完整堆栈：
+            // log.debug("JWT 校验异常详情", e);
             return null;
         }
     }

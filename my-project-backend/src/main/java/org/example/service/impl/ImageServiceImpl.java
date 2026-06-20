@@ -1,31 +1,41 @@
 package org.example.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import io.minio.GetObjectArgs;
-import io.minio.GetObjectResponse;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.minio.*;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.IOUtils;
 import org.example.entity.dto.Account;
+import org.example.entity.dto.StoreImage;
 import org.example.mapper.AccountMapper;
+import org.example.mapper.ImageStoreMapper;
 import org.example.service.ImageService;
+import org.example.utils.Const;
+import org.example.utils.FlowUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 
 @Slf4j
 @Service
-public class ImageServiceImpl implements ImageService {
+public class ImageServiceImpl extends ServiceImpl<ImageStoreMapper,StoreImage> implements ImageService {
 
     @Resource
     MinioClient client;
     @Resource
     AccountMapper mapper;
+
+    @Resource
+    FlowUtils flowUtils;
+
+    private SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
 
 
     @Override
@@ -39,6 +49,32 @@ public class ImageServiceImpl implements ImageService {
     }
 
     @Override
+    public String uploadImage(MultipartFile file, int id) throws IOException {
+        String key = Const.FORUM_IMAGE_COUNTER + id;
+        if(!flowUtils.limitPeriodCounterCheck(key,20,2600))
+            return null;
+        String imageName = UUID.randomUUID().toString().replace("-","");
+        Date date = new Date();
+        imageName = "/cache/" + format.format(date) + "/" + imageName;
+        PutObjectArgs args = PutObjectArgs.builder()
+                .bucket("study")
+                .stream(file.getInputStream(),file.getSize(),-1)
+                .object(imageName)
+                .build();
+        try {
+            client.putObject(args);
+            if(this.save(new StoreImage(id,imageName,date))){
+                return imageName;
+            }else{
+                return null;
+            }
+        }catch (Exception e){
+            log.info("图片上传出现问题"+e.getMessage(),e);
+            return null;
+        }
+    }
+
+    @Override
     public String uploadAvatar(MultipartFile file, int id) throws IOException {
         String imageName = UUID.randomUUID().toString().replace("-","");
         imageName = "/avatar/"+imageName;
@@ -49,6 +85,8 @@ public class ImageServiceImpl implements ImageService {
                 .build();
         try {
             client.putObject(args);
+            String avatar = mapper.selectById(id).getAvatar();
+            this.deleteOldAvatar(avatar);
             if(mapper.update(null, Wrappers.<Account>update()
                     .eq("id",id).set("avatar",imageName)) > 0){
                 return imageName;
@@ -57,6 +95,15 @@ public class ImageServiceImpl implements ImageService {
         }catch (Exception e){
             log.info("图片上传出现问题"+e.getMessage(),e);
             return null;
+        }
+    }
+    private void deleteOldAvatar(String avatar) throws Exception {
+        if(avatar==null || avatar.isEmpty()){
+            RemoveObjectArgs args = RemoveObjectArgs.builder()
+                    .bucket("study")
+                    .object(avatar)
+                    .build();
+            client.removeObject(args);
         }
     }
 
