@@ -11,6 +11,7 @@ import org.example.entity.vo.request.ConfirmResetVO;
 import org.example.entity.vo.request.EmailRegisterVO;
 import org.example.entity.vo.request.EmailResetVO;
 import org.example.service.AccountService;
+import org.example.utils.ControllerUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.function.Function;
@@ -24,36 +25,29 @@ public class AuthorizeController {
     @Resource
     AccountService accountService;
 
+    @Resource
+    ControllerUtils utils;
+
     @GetMapping("/ask-code")
     public RestBean<Void> askCode(@RequestParam @Email String email,
                                   @RequestParam @Pattern(regexp = "(register|reset|modify)") String type,
                                   HttpServletRequest request){
-        return this.messageHandle(
+        return utils.messageHandle(
                 ()->accountService.registerEmailVerityCode(type,email,request.getRemoteAddr())
         );
     }
 
     @PostMapping("/register")
     public RestBean<Void> register(@RequestBody @Valid EmailRegisterVO vo){
-        return this.messageHandle(vo,accountService::registerEmailAccount);
+        return utils.messageHandle(()->accountService.registerEmailAccount(vo));
     }
     @PostMapping("/reset-confirm")
     public  RestBean<Void> resetConfirm(@RequestBody @Valid ConfirmResetVO vo){
-        return this.messageHandle(vo,accountService::resetConfirm);
+        return utils.messageHandle(()->accountService.resetConfirm(vo));
     }
 
     @PostMapping("/reset-password")
     public  RestBean<Void> resetConfirm(@RequestBody @Valid EmailResetVO vo){
-        return this.messageHandle(vo,accountService::resetEmailAccountPassword);
+        return utils.messageHandle(()->accountService.resetEmailAccountPassword(vo));
     }
-
-    private <T> RestBean<Void> messageHandle(T vo, Function<T,String> function){
-        return messageHandle(()->function.apply(vo));
-    }
-
-    private  RestBean<Void> messageHandle(Supplier<String> action){
-        String message = action.get();
-        return message==null?RestBean.success():RestBean.failure(400,message);
-    }
-
 }

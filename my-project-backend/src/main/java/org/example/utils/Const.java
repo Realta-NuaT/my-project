@@ -8,8 +8,8 @@ public class Const {
     public static final String VERIFY_EMAIL_LIMIT = "verify:email:limit";
     public static final String VERIFY_EMAIL_DATA = "verify:password:data";
     //过滤器优先级
-    public static final int ORDER_LIMIT = -101;
-    public static final int ORDER_CORS = -102;
+    public final static int ORDER_FLOW_LIMIT = -101;
+    public final static int ORDER_CORS = -102;
     //请求频率限制
     public static final String FLOW_LIMIT_COUNTER = "flow:counter:";
     public static final String FLOW_LIMIT_BLOCK = "flow:block:";
@@ -19,4 +19,5 @@ public class Const {
     //论坛相关
     public static final String FORUM_WEATHER_CACHE = "weather:cache:";
     public static final String FORUM_IMAGE_COUNTER = "forum:image:";
+    public static final String FORUM_TOPIC_CREATE_COUNTER = "forum:topic:create:";
 }
