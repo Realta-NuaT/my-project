@@ -11,7 +11,9 @@ import {ElMessage} from "element-plus"
 import { Quill } from '@vueup/vue-quill'  // 需要先导入 Quill
 import ImageResize from 'quill-image-resize-vue'
 import ColorDot from "@/components/ColorDot.vue";
+import {useStore} from "@/store";
 Quill.register('modules/imageResize', ImageResize)
+const store = useStore();
 
 defineProps({
   show: Boolean,
@@ -23,8 +25,7 @@ const editor = reactive({
   type: null,
   title: '',
   text: '',
-  loading: false,
-  types: []
+  loading: false
 })
 
 function initEditor() {
@@ -173,7 +174,6 @@ const onQuillReady = () => {
     }
   }, true)
 }
-get('/api/forum/types',data => editor.types =data )
 </script>
 
 <template>
@@ -192,8 +192,8 @@ get('/api/forum/types',data => editor.types =data )
       </template>
       <div style="display: flex;gap: 10px">
         <div style="width: 150px">
-          <el-select placeholder="选择主题类型..." value-key="id" v-model="editor.type" :disabled="!editor.types.length">
-            <el-option v-for="item in editor.types" :value="item" :label="item.name">
+          <el-select placeholder="选择主题类型..." value-key="id" v-model="editor.type" :disabled="!store.forum.types.length">
+            <el-option v-for="item in store.forum.types" :value="item" :label="item.name">
               <div>
                 <color-dot :color="item.color"/>
                 <span style="margin-left: 10px">{{item.name}}</span>

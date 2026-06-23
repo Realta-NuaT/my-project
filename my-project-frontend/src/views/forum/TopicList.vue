@@ -7,7 +7,10 @@ import {computed, reactive, ref} from "vue";
 import {get} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
-
+import {useStore} from "@/store";
+import {color} from "quill/ui/icons";
+import axios from "axios";
+const store = useStore();
 const weather = reactive({
   location: {},
   now:{},
@@ -15,11 +18,17 @@ const weather = reactive({
   success: false
 })
 const editor = ref(false)
+const list = ref(null)
 
 const today = computed(()=>{
   const date = new Date();
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 })
+get('/api/forum/types',data => store.forum.types =data )
+function updateList(){
+  get('/api/forum/list-topic?page=0&type=0',data=>list.value=data)
+}
+updateList()
 
 
 navigator.geolocation.getCurrentPosition(position => {
@@ -62,8 +71,33 @@ navigator.geolocation.getCurrentPosition(position => {
         </div>
       </light-card>
       <light-card style="margin-top: 10px;height: 30px"></light-card>
-      <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px;">
-        <light-card style="height: 150px" v-for="item in 10"></light-card>
+      <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px;"
+           v-if="store.forum.types">
+        <light-card v-for="item in list" class="topic-card">
+          <div style="display: flex">
+            <div>
+              <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
+            </div>
+            <div style="margin-left: 7px">
+              <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
+              <div>{{item.time}}</div>
+            </div>
+          </div>
+          <div>
+            <div class="topic-type"
+                 :style="{
+                  color:store.findTypeById(item.type)?.color + 'EE',
+                  'border-color':store.findTypeById(item.type)?.color + '77',
+                  'background-color':store.findTypeById(item.type)?.color + '33',
+            }">
+              {{store.findTypeById(item.type)?.name}}
+            </div>
+            <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
+          </div>
+          <div class="topic-content">
+            {{item.text}}
+          </div>
+        </light-card>
       </div>
     </div>
     <div style="width: 280px">
@@ -116,11 +150,39 @@ navigator.geolocation.getCurrentPosition(position => {
         </div>
       </div>
     </div>
-    <topic-editor :show="editor" @success="editor = false" @close="editor = false"/>
+    <topic-editor :show="editor" @success="editor = false;updateList()" @close="editor = false"/>
   </div>
 </template>
 
 <style lang="less" scoped>
+.topic-card {
+  padding: 15px;
+  transition:  scale .3s;
+
+  &:hover{
+    scale: 1.015;
+    cursor: pointer;
+  }
+  .topic-content{
+    font-size: 13px;
+    color: grey;
+    margin: 5px 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topic-type{
+    display: inline-block;
+    border: solid 0.5px grey;
+    border-radius: 3px;
+    font-size: 12px;
+    padding: 0 5px;
+    height: 18px;
+  }
+}
 .info-text{
   display:flex;
   justify-content: space-between;

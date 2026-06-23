@@ -55,6 +55,6 @@ public class ForumController {
     }
     @GetMapping("list-topic")
     public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int page,@RequestParam @Min(0) int type){
-        return
+        return RestBean.success(topicService.listTopicByPage(type,page));
     }
 }

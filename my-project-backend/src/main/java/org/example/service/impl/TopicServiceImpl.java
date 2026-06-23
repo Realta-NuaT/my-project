@@ -12,6 +12,7 @@ import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.mapper.TopicMapper;
 import org.example.mapper.TopicTypeMapper;
 import org.example.service.TopicService;
+import org.example.utils.CacheUtils;
 import org.example.utils.Const;
 import org.example.utils.FlowUtils;
 import org.springframework.beans.BeanUtils;
@@ -28,6 +29,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     FlowUtils flowUtils;
+
+    @Resource
+    CacheUtils cacheUtils;
 
     private Set<Integer> types = null;
     @PostConstruct
@@ -59,6 +63,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setUid(uid);
         topic.setTime(new Date());
         if (this.save(topic)) {
+            cacheUtils.deleteCache(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         }else{
             return "内部错误,请联系管理员";
@@ -67,7 +72,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public List<TopicPreviewVO> listTopicByPage(int page, int type) {
-        List<TopicPreviewVO> list = null;
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page +":" + type;
+        List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
+        if(list != null)
+            return list;
         List<Topic> topics;
         if(type == 0)
             topics = baseMapper.topicList(page * 10);
@@ -76,8 +84,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         if(topics.isEmpty())
             return null;
         list = topics.stream().map(this::resolveToPreview).toList();
-
-        return null;
+        cacheUtils.saveListToCache(key , list,60);
+        return list;
     }
 
     private TopicPreviewVO resolveToPreview(Topic topic){
