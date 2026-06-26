@@ -1,5 +1,5 @@
 <script setup>
-import {get, logout, takeAccessToken} from "@/net/index.js";
+import {get, logout} from "@/net/index.js";
 import router from "@/router/index.js";
 import {useStore} from "@/store/index.js";
 import {reactive, ref} from "vue";

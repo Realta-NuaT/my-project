@@ -5,11 +5,11 @@ import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import org.example.entity.RestBean;
+import org.example.entity.dto.Interact;
 import org.example.entity.vo.request.TopicCreateVO;
-import org.example.entity.vo.response.TopicPreviewVO;
-import org.example.entity.vo.response.TopicTypeVO;
-import org.example.entity.vo.response.WeatherVO;
+import org.example.entity.vo.response.*;
 import org.example.mapper.TopicTypeMapper;
 import org.example.service.TopicService;
 import org.example.service.WeatherService;
@@ -17,6 +17,7 @@ import org.example.utils.Const;
 import org.example.utils.ControllerUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -54,7 +55,28 @@ public class ForumController {
         return utils.messageHandle(()->topicService.createTopic(id,vo));
     }
     @GetMapping("list-topic")
-    public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int page,@RequestParam @Min(0) int type){
-        return RestBean.success(topicService.listTopicByPage(type,page));
+    public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int page,
+                                                    @RequestParam @Min(0) int type){
+        return RestBean.success(topicService.listTopicByPage(page + 1,type));
+    }
+
+    @GetMapping("/top-topic")
+    public RestBean<List<TopicTopVO>> topTopic(){
+        return RestBean.success(topicService.listTopTopics());
+    }
+
+    @GetMapping("topic")
+    public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid){
+        return RestBean.success(topicService.getTopic(tid));
+    }
+
+    @GetMapping("/interact")
+    public RestBean<Void> interact(@RequestParam @Min(0) int tid,
+                                   @RequestParam @Pattern(regexp = "(like|collect)") String type,
+                                   @RequestParam boolean state,
+                                   @RequestAttribute(Const.ATTR_USER_ID) int id
+                                   ){
+        topicService.interact(new Interact(tid, id,new Date(), type), state);
+        return RestBean.success();
     }
 }

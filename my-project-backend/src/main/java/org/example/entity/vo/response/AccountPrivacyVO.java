@@ -9,4 +9,6 @@ public class AccountPrivacyVO {
     boolean wx;
     boolean qq;
     boolean gender;
+
+
 }

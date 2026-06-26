@@ -5,7 +5,7 @@ defineProps({
 </script>
 
 <template>
-  <div class="dot" :style="{ backgroundColor: color }"></div>
+  <div class="dot" :style="{ background: color }"></div>
 </template>
 
 <style scoped>

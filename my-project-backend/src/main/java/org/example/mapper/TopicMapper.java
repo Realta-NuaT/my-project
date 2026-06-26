@@ -1,24 +1,34 @@
 package org.example.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.example.entity.dto.Interact;
 import org.example.entity.dto.Topic;
 
 import java.util.List;
 
 @Mapper
 public interface TopicMapper extends BaseMapper<Topic> {
-    @Select("""
-            select * from db_topic left join db_account on uid = db_account.id
-            order by `time` desc limit ${start}, 10
+    @Insert("""
+                <script>
+                    insert ignore into db_topic_interact_${type} values
+                    <foreach collection ="interacts" item ="item" separator =","
+                        (#{item.tid},#{item.uid},#{item.time})
+                    </foreach>
+                </script>
             """)
-    List<Topic> topicList(int start);
+    void addInteract(List<Interact> interacts, String type);
 
-    @Select("""
-            select * from db_topic left join db_account on uid = db_account.id
-                     where type=${type}
-            order by `time` desc limit ${start}, 10
+    @Delete("""
+                <script>
+                    delete into db_topic_interact_${type} where
+                    <foreach collection ="interacts" item ="item" separator ="or"
+                        (tid = #{item.tid} and uid = #{item.uid})
+                    </foreach>
+                </script>
             """)
-    List<Topic> topicListByType(int start, int type);
+    void deleteInteract(List<Interact> interacts, String type);
 }

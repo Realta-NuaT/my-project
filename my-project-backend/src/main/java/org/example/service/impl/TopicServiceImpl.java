@@ -2,23 +2,29 @@ package org.example.service.impl;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import org.example.entity.dto.Topic;
-import org.example.entity.dto.TopicType;
+import org.example.entity.dto.*;
 import org.example.entity.vo.request.TopicCreateVO;
+import org.example.entity.vo.response.TopicDetailVO;
 import org.example.entity.vo.response.TopicPreviewVO;
-import org.example.mapper.TopicMapper;
-import org.example.mapper.TopicTypeMapper;
+import org.example.entity.vo.response.TopicTopVO;
+import org.example.mapper.*;
 import org.example.service.TopicService;
 import org.example.utils.CacheUtils;
 import org.example.utils.Const;
 import org.example.utils.FlowUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +38,18 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     CacheUtils cacheUtils;
+
+    @Resource
+    AccountMapper accountMapper;
+
+    @Resource
+    AccountDetailsMapper accountDetailsMapper;
+
+    @Resource
+    AccountPrivacyMapper  accountPrivacyMapper;
+
+    @Resource
+    StringRedisTemplate template;
 
     private Set<Integer> types = null;
     @PostConstruct
@@ -63,7 +81,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setUid(uid);
         topic.setTime(new Date());
         if (this.save(topic)) {
-            cacheUtils.deleteCache(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+            cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         }else{
             return "内部错误,请联系管理员";
@@ -71,16 +89,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
-    public List<TopicPreviewVO> listTopicByPage(int page, int type) {
-        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + page +":" + type;
+    public List<TopicPreviewVO> listTopicByPage(int pageNumber, int type) {
+        String key = Const.FORUM_TOPIC_PREVIEW_CACHE + pageNumber +":" + type;
         List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
         if(list != null)
             return list;
-        List<Topic> topics;
+        Page<Topic> page = Page.of(pageNumber,10);
         if(type == 0)
-            topics = baseMapper.topicList(page * 10);
+            baseMapper.selectPage(page,Wrappers.<Topic>query().orderByDesc("time"));
         else
-            topics = baseMapper.topicListByType(page * 10, type);
+            baseMapper.selectPage(page,Wrappers.<Topic>query().eq("type",type).orderByDesc("time"));
+        List<Topic> topics = page.getRecords();
         if(topics.isEmpty())
             return null;
         list = topics.stream().map(this::resolveToPreview).toList();
@@ -88,8 +107,80 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return list;
     }
 
+    @Override
+    public List<TopicTopVO> listTopTopics() {
+        List<Topic>  topics = baseMapper.selectList(Wrappers.<Topic>query()
+                .select("id","title","time")
+                .eq("top",1));
+        return topics.stream().map(topic ->  {
+            TopicTopVO vo = new TopicTopVO();
+            BeanUtils.copyProperties(topic,vo);
+            return vo;
+        }).toList();
+    }
+
+    @Override
+    public TopicDetailVO getTopic(int tid) {
+        TopicDetailVO vo = new TopicDetailVO();
+        Topic topic = baseMapper.selectById(tid);
+        BeanUtils.copyProperties(topic,vo);
+        TopicDetailVO.User user = new TopicDetailVO.User();
+        vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
+        return vo;
+    }
+
+    @Override
+    public void interact(Interact interact, boolean state) {
+        String type = interact.getType();
+        synchronized (type.intern()) {
+            template.opsForHash().put(type, interact.toKey(), state);
+            this.saveInteractSchedule(type);
+        }
+    }
+
+    private final Map<String, Boolean> state = new HashMap<>();
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
+    private void saveInteractSchedule(String type){
+        if(!state.getOrDefault(type,false)){
+            state.put(type,true);
+            service.schedule(()->{
+                this.saveInteract(type);
+                state.put(type,false);
+            }, 3, TimeUnit.SECONDS);
+        }
+    }
+
+    private void saveInteract(String type) {
+        synchronized (type.intern()) {
+            List<Interact> check = new LinkedList<>();
+            List<Interact> uncheck = new LinkedList<>();
+            template.opsForHash().entries(type).forEach((k, v) -> {
+                if(Boolean.parseBoolean(v.toString()))
+                    check.add(Interact.parseInteract(k.toString(),type));
+                else
+                    uncheck.add(Interact.parseInteract(k.toString(),type));
+            });
+            if(!check.isEmpty())
+                baseMapper.addInteract(check,type);
+            if(!uncheck.isEmpty())
+                baseMapper.addInteract(uncheck,type);
+            template.delete(type);
+        }
+    }
+
+    private <T> T fillUserDetailsByPrivacy(T target, int uid){
+        AccountDetails details = accountDetailsMapper.selectById(uid);
+        Account account = accountMapper.selectById(uid);
+        AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
+        String[] ignores = accountPrivacy.hiddenFields();
+        BeanUtils.copyProperties(account,target,ignores);
+        BeanUtils.copyProperties(details,target,ignores);
+        return target;
+    }
+
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
+        BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
         List<String> images =  new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
