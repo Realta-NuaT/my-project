@@ -2,16 +2,17 @@
 
 import LightCard from "@/components/LightCard.vue";
 import {
-  Calendar,
+  ArrowRight, ArrowRightBold,
+  Calendar, CircleCheck,
   Clock,
   CollectionTag,
   Compass,
   Document,
   Edit,
-  EditPen,
+  EditPen, FolderOpened,
   Link,
   Microphone,
-  Picture
+  Picture, Star
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {computed, reactive, ref, watch} from "vue";
@@ -23,7 +24,11 @@ import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
+import TopicCollectList from "@/components/TopicCollectList.vue";
 const store = useStore();
+
+const isLoading = ref(false)
+
 const weather = reactive({
   location: {},
   now:{},
@@ -39,6 +44,8 @@ const topics = reactive({
   top:[]
 })
 
+const collects = ref(false);
+
 watch(()=>topics.type,()=>resetList(),{immediate:true})
 
 const today = computed(()=>{
@@ -49,21 +56,27 @@ const today = computed(()=>{
 
 get('api/forum/top-topic',data => topics.top = data)
 
+
+
 function updateList(){
-  if(topics.end)
-    return;
+  if (topics.end || isLoading.value) return  // 正在加载则直接退出
+  isLoading.value = true
+
   get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data=> {
     if(data != null){
-      data.forEach(d => {
-        topics.list.push(d)
-        topics.page++
-      })
+      data.forEach(d => topics.list.push(d))
+      topics.page++
 
     }
     if(!data || data.length < 10){
       topics.end = true
     }
-  }
+        isLoading.value = false
+  },
+    () => {
+      // 可以加一个错误回调
+      isLoading.value = false
+    }
   )
 }
 
@@ -147,7 +160,7 @@ navigator.geolocation.getCurrentPosition(position => {
           <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px;"
                v-infinite-scroll="updateList">
             <light-card v-for="item in topics.list" class="topic-card"
-                        @click="router.push('index/topic-detail/'+item.id)">
+                        @click="router.push('/index/topic-detail/'+item.id)">
               <div style="display: flex">
                 <div>
                   <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
@@ -170,6 +183,14 @@ navigator.geolocation.getCurrentPosition(position => {
               <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">
                 <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover"/>
               </div>
+              <div style="display: flex;gap: 20px;font-size: 13px;margin-top: 10px;opacity: 0.8">
+                <div>
+                  <el-icon style="vertical-align: middle"><CircleCheck /></el-icon> {{item.like}}点赞
+                </div>
+                <div>
+                  <el-icon style="vertical-align: middle"><Star /></el-icon> {{item.collect}}收藏
+                </div>
+              </div>
             </light-card>
           </div>
         </div>
@@ -178,6 +199,12 @@ navigator.geolocation.getCurrentPosition(position => {
     <div style="width: 280px">
       <div style="position: sticky;top:20px">
         <light-card>
+          <div class="collect-list-button" @click="collects = true">
+            <span><el-icon><FolderOpened/></el-icon> 查看我的收藏</span>
+            <el-icon style="transform: translateY(3px)"><ArrowRightBold/></el-icon>
+          </div>
+        </light-card>
+        <light-card style="margin-top: 10px;">
           <div style="font-weight: bold">
             <el-icon style="translate: 0 2px"><CollectionTag/></el-icon>
             论坛公告
@@ -226,10 +253,24 @@ navigator.geolocation.getCurrentPosition(position => {
       </div>
     </div>
     <topic-editor :show="editor" @success="onTopicCreate" @close="editor = false"/>
+    <topic-collect-list :show="collects" @close="collects = false"/>
   </div>
 </template>
 
 <style lang="less" scoped>
+.collect-list-button{
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  transition: .3s;
+
+  &:hover{
+    cursor: pointer;
+    opacity: 0.6;
+  }
+}
+
+
 .top-topic{
   display: flex;
 

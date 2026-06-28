@@ -1,6 +1,8 @@
 package org.example.config;
 
 
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +17,12 @@ public class WebConfiguration {
     public RestTemplate restTemplate() {return new RestTemplate();}
 
     @Bean
-    public PaginationInnerInterceptor paginationInterceptor() {
-        PaginationInnerInterceptor paginationInterceptor = new PaginationInnerInterceptor();
-        paginationInterceptor.setMaxLimit(100L);
-        return paginationInterceptor;
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        PaginationInnerInterceptor paginationInnerInterceptor =
+                new PaginationInnerInterceptor(DbType.MYSQL);
+        paginationInnerInterceptor.setMaxLimit(100L);
+        interceptor.addInnerInterceptor(paginationInnerInterceptor);
+        return interceptor;
     }
 }

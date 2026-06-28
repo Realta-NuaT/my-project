@@ -8,7 +8,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.*;
+import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
+import org.example.entity.vo.request.TopicUpdateVO;
+import org.example.entity.vo.response.CommentVO;
 import org.example.entity.vo.response.TopicDetailVO;
 import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.entity.vo.response.TopicTopVO;
@@ -49,6 +52,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     AccountPrivacyMapper  accountPrivacyMapper;
 
     @Resource
+    TopicCommentMapper commentMapper;
+
+    @Resource
     StringRedisTemplate template;
 
     private Set<Integer> types = null;
@@ -68,7 +74,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
-        if(!textLimitCheck(vo.getContent()))
+        if(!textLimitCheck(vo.getContent(),20000))
             return "文章内容太多,发文失败!";
         if(!types.contains(vo.getType()))
             return "文章类型非法!";
@@ -87,6 +93,68 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             return "内部错误,请联系管理员";
         }
     }
+
+    @Override
+    public String updateTopic(int uid, TopicUpdateVO vo) {
+        if(!textLimitCheck(vo.getContent(),20000))
+            return "文章内容太多,发文失败!";
+        if(!types.contains(vo.getType()))
+            return "文章类型非法!";
+        baseMapper.update(null, Wrappers.<Topic>update()
+                .eq("uid", uid)
+                .eq("id",vo.getId())
+                .set("title",vo.getTitle())
+                .set("content",vo.getContent().toString())
+                .set("type",vo.getType())
+        );
+        return null;
+    }
+
+    @Override
+    public String createComment(int uid, AddCommentVO vo) {
+        if(!textLimitCheck(JSONObject.parseObject(vo.getContent()),2000))
+            return "评论内容太多,发表失败!";
+        String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
+        if(!flowUtils.limitPeriodCounterCheck(key,2,60))
+            return "发表评论频繁,请稍后再试!";
+        TopicComment comment = new TopicComment();
+        comment.setUid(uid);
+        BeanUtils.copyProperties(vo,comment);
+        comment.setTime(new Date());
+        commentMapper.insert(comment);
+        return null;
+    }
+
+    @Override
+    public List<CommentVO> comments(int tid, int pageNumber) {
+        Page<TopicComment> page = Page.of(pageNumber ,10);
+        commentMapper.selectPage(page,Wrappers.<TopicComment>query().eq("tid",tid));
+        return page.getRecords().stream().map( dto->{
+            CommentVO vo = new CommentVO();
+            BeanUtils.copyProperties(dto,vo);
+            if(dto.getQuote() > 0){
+                JSONObject object = JSONObject.parseObject(
+                        commentMapper.selectOne(Wrappers.<TopicComment>query().eq("id",dto.getId())).getContent()
+                );
+
+            }
+        });
+        return List.of();
+    }
+
+    @Override
+    public List<TopicPreviewVO> listTopicCollects(int uid) {
+        return baseMapper.collectTopics(uid)
+                .stream()
+                .map(topic -> {
+                    TopicPreviewVO vo = new TopicPreviewVO();
+                    BeanUtils.copyProperties(topic,vo);
+                    return vo;
+                })
+                .toList();
+    }
+
+
 
     @Override
     public List<TopicPreviewVO> listTopicByPage(int pageNumber, int type) {
@@ -120,10 +188,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
-    public TopicDetailVO getTopic(int tid) {
+    public TopicDetailVO getTopic(int tid, int uid) {
         TopicDetailVO vo = new TopicDetailVO();
         Topic topic = baseMapper.selectById(tid);
         BeanUtils.copyProperties(topic,vo);
+        TopicDetailVO.Interact interact = new TopicDetailVO.Interact(
+                hasInteract(tid,uid,"like"),
+                hasInteract(tid,uid,"collect")
+        );
+        vo.setInteract(interact);
         TopicDetailVO.User user = new TopicDetailVO.User();
         vo.setUser(this.fillUserDetailsByPrivacy(user,topic.getUid()));
         return vo;
@@ -133,9 +206,16 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     public void interact(Interact interact, boolean state) {
         String type = interact.getType();
         synchronized (type.intern()) {
-            template.opsForHash().put(type, interact.toKey(), state);
+            template.opsForHash().put(type, interact.toKey(), Boolean.toString(state));
             this.saveInteractSchedule(type);
         }
+    }
+
+    private boolean hasInteract(int tid, int uid, String type){
+        String key = tid + ":" + uid;
+        if(template.opsForHash().hasKey(type,key))
+            return Boolean.parseBoolean(template.opsForHash().entries(type).get(key).toString());
+        return baseMapper.userInteractCount(tid,uid,type) > 0;
     }
 
     private final Map<String, Boolean> state = new HashMap<>();
@@ -163,7 +243,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             if(!check.isEmpty())
                 baseMapper.addInteract(check,type);
             if(!uncheck.isEmpty())
-                baseMapper.addInteract(uncheck,type);
+                baseMapper.deleteInteract(uncheck, type);
             template.delete(type);
         }
     }
@@ -182,9 +262,18 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
         BeanUtils.copyProperties(topic,vo);
+        vo.setLike(baseMapper.interactCount(topic.getId(),"like"));
+        vo.setCollect(baseMapper.interactCount(topic.getId(),"collect"));
         List<String> images =  new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
         JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+
+        vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) : previewText.toString());
+        vo.setImages(images);
+        return vo;
+    }
+
+    private void shortContent(JSONObject ops, StringBuilder previewText, Consumer<>){
         for (Object op : ops) {
             Object insert = JSONObject.from(op).get("insert");
             if(insert instanceof String text) {
@@ -195,17 +284,14 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                         .ifPresent(obj->images.add(obj.toString()));
             }
         }
-        vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) : previewText.toString());
-        vo.setImages(images);
-        return vo;
     }
 
-    private boolean textLimitCheck(JSONObject object){
+    private boolean textLimitCheck(JSONObject object, int max){
         if(object == null) return false;
         long length = 0;
         for (Object op : object.getJSONArray("ops")) {
             length += JSONObject.from(op).getString("insert").length();
-            if(length > 20000) return false;
+            if(length > max) return false;
         }
         return true;
     }

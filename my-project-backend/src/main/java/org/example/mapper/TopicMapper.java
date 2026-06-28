@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.example.entity.dto.Interact;
 import org.example.entity.dto.Topic;
+import org.example.entity.vo.response.TopicPreviewVO;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ public interface TopicMapper extends BaseMapper<Topic> {
     @Insert("""
                 <script>
                     insert ignore into db_topic_interact_${type} values
-                    <foreach collection ="interacts" item ="item" separator =","
+                    <foreach collection ="interacts" item ="item" separator =",">
                         (#{item.tid},#{item.uid},#{item.time})
                     </foreach>
                 </script>
@@ -24,11 +25,27 @@ public interface TopicMapper extends BaseMapper<Topic> {
 
     @Delete("""
                 <script>
-                    delete into db_topic_interact_${type} where
-                    <foreach collection ="interacts" item ="item" separator ="or"
+                    delete from db_topic_interact_${type} where
+                    <foreach collection ="interacts" item ="item" separator ="or">
                         (tid = #{item.tid} and uid = #{item.uid})
                     </foreach>
                 </script>
             """)
     void deleteInteract(List<Interact> interacts, String type);
+
+    @Select("""
+                select count(*) from db_topic_interact_${type} where tid = #{tid}
+            """)
+    int interactCount(int tid, String type);
+
+    @Select("""
+                select count(*) from db_topic_interact_${type} where tid = #{tid} and uid = #{uid}
+            """)
+    int userInteractCount(int tid, int uid, String type);
+
+    @Select(""" 
+                select * from db_topic_interact_collect left join db_topic on tid = db_topic.id 
+                where db_topic_interact_collect.uid = #{uid}
+            """)
+    List<Topic> collectTopics(int uid);
 }

@@ -2,7 +2,7 @@
 <script setup>
 import {Check, Document} from "@element-plus/icons-vue"
 import {computed, reactive, ref} from "vue"
-import {QuillEditor} from "@vueup/vue-quill"
+import {Delta, QuillEditor} from "@vueup/vue-quill"
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import axios from "axios"
 import {accessHeader, get, post} from "@/net/index.js"
@@ -15,8 +15,40 @@ import {useStore} from "@/store";
 Quill.register('modules/imageResize', ImageResize)
 const store = useStore();
 
-defineProps({
+const props = defineProps({
   show: Boolean,
+  defaultTitle: {
+    default: '',
+    type: String
+  },
+  defaultText: {
+    default: '',
+    type: String
+  },
+  defaultType: {
+    default: null,
+    type: Number
+  },
+  submitButton: {
+    default: '立即发表主题',
+    type: String
+  },
+  submit: {
+    default: (editor, success) => {
+      post('/api/forum/create-topic',
+        {
+          type: editor.type.id,
+          title: editor.title,
+          content: editor.text
+        },
+        () => {
+          ElMessage.success("帖子发表成功！" )
+          success()
+        }
+      )
+    },
+    type: Function
+  }
 })
 
 const emit = defineEmits(['close'],['success'])
@@ -29,10 +61,13 @@ const editor = reactive({
 })
 
 function initEditor() {
-  if (!quillRef.value) return
-  quillRef.value.setContents('','user')
-  editor.title = ''
-  editor.type = null
+  if(props.defaultText) {
+    editor.text = new Delta(JSON.parse(props.defaultText))
+  }else{
+    quillRef.value.setContents('','user')
+  }
+  editor.title = props.defaultTitle
+  editor.type = findTypeById(props.defaultType)
 }
 
 function deltaToText(delta) {
@@ -49,6 +84,15 @@ function deltaToText(delta) {
 
 const contentLength = computed(()=>deltaToText(editor.text).length)
 
+
+function findTypeById(id){
+  for (let type of store.forum.types) {
+    if(type.id === id){
+      return type
+    }
+  }
+}
+
 function submitTopic(){
   const text = deltaToText(editor.text)
   if(text.length > 20000) {
@@ -63,15 +107,7 @@ function submitTopic(){
     ElMessage.warning('请选择一个合适的帖子类型！')
     return
   }
-  post('/api/forum/create-topic',{
-    type:editor.type.id,
-    title:editor.title,
-    content:editor.text
-  },()=>{
-    ElMessage.success("帖子发表成功")
-    emit('success')
-      }
-  )
+  props.submit(editor, () => emit('success'))
 }
 
 const insertImageToEditor = async (file) => {
@@ -227,7 +263,7 @@ const onQuillReady = () => {
           当前字数 {{ contentLength }} (最大支持20000字)
         </div>
         <div>
-          <el-button type="success" :icon="Check" @click="submitTopic" plain>立即发表主题</el-button>
+          <el-button type="success" :icon="Check" @click="submitTopic" plain>{{submitButton}}</el-button>
         </div>
       </div>
     </el-drawer>
@@ -242,21 +278,6 @@ const onQuillReady = () => {
 }
 :deep(.el-drawer__header){
   margin: 0;
-}
-:deep(.ql-toolbar){
-  border-radius: 5px 5px 0 0;
-  border-color: var(--el-border-color);
-}
-:deep(.ql-container){
-  border-radius: 0 0 5px 5px;
-  border-color: var(--el-border-color);
-}
-:deep(.ql-editor.ql-blank::before) {
-  color: var(--el-text-color-placeholder);
-  font-style: normal;
-}
-:deep(.ql-editor){
-  font-size: 14px;
 }
 :deep(.ql-editor img) {
   max-width: 300px;   /* 可改成你想要的宽度，比如 200px */

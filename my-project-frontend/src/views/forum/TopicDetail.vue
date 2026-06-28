@@ -1,18 +1,21 @@
 <script setup>
 import {useRoute} from "vue-router";
-import {get} from "@/net";
+import {get, post} from "@/net";
 import axios from "axios";
-import {computed, reactive} from "vue";
-import {ArrowLeft, CircleCheck, Female, Male, Star} from "@element-plus/icons-vue";
+import {computed, reactive, ref} from "vue";
+import {ArrowLeft, CircleCheck, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
 import {QuillDeltaToHtmlConverter} from "quill-delta-to-html";
 import Card from "@/components/Card.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
 import InteractButton from "@/components/InteractButton.vue";
 import {ElMessage} from "element-plus";
+import {useStore} from "@/store";
+import TopicEditor from "@/components/TopicEditor.vue";
+import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
 
 const route = useRoute();
-
+const store = useStore();
 const tid = route.params.tid;
 
 const topic = reactive({
@@ -22,11 +25,21 @@ const topic = reactive({
   comments: []
 })
 
-
-get(`api/forum/topic?tid=${tid}`,data => {
-  topic.data = data
-  console.info(topic.data)
+const edit = ref(false)
+const comment = reactive({
+  show:false,
+  text:'',
+  quote:-1
 })
+
+const init = () =>{
+  get(`api/forum/topic?tid=${tid}`,data => {
+    topic.data = data
+    topic.like = data.interact.like
+    topic.collect = data.interact.collect
+  })
+}
+init()
 
 const content = computed(() => {
   const ops = JSON.parse(topic.data.content).ops
@@ -40,8 +53,21 @@ function interact(type, message) {
     if (topic[type]) {
       ElMessage.success(`${message}成功!`)
     }else{
-      ElMessage.success(`已取消${message}`)
+      ElMessage.success(`已取消${message}!`)
     }
+  })
+}
+
+function updateTopic(editor) {
+  post('api/forum/update-topic',{
+    id: tid,
+    type: editor.type.id,
+    title: editor.title,
+    content: editor.text
+  }, () => {
+    ElMessage.success('帖子内容更新成功')
+    edit.value = false
+    init()
   })
 }
 </script>
@@ -86,22 +112,63 @@ function interact(type, message) {
     </div>
     <div class="topic-main-right">
       <div class="topic-content" v-html="content"></div>
+      <el-divider/>
+      <div style="font-size: 13px;color: grey;text-align: center;">
+        <div>发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
+      </div>
       <div style="text-align: right;margin-top: 30px">
-        <interact-button name="点个赞吧" check-name="已点赞" :check="true" color="pink">
+        <interact-button name="编辑帖子" :check="false" color="dodgerblue"
+                         @check="edit = true"
+                         style="margin-right: 20px" v-if="store.user.id === topic.data.user.id">
+          <el-icon><EditPen/></el-icon>
+        </interact-button>
+        <interact-button name="点个赞吧" check-name="已点赞" :check="topic.like" color="pink"
+                         @check="interact('like','点赞')">
           <el-icon><CircleCheck/></el-icon>
         </interact-button>
-        <interact-button name="收藏本贴" check-name="已收藏" :check="true" color="orange"
+        <interact-button name="收藏本贴" check-name="已收藏" :check="topic.collect" color="orange"
+                         @check="interact('collect','收藏')"
                          style="margin-left: 20px">
           <el-icon><Star/></el-icon>
         </interact-button>
       </div>
     </div>
   </div>
-  <div></div>
+  <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
+                :default-type="topic.data.type" :default-text="topic.data.content"
+                :default-title="topic.data.title" submit-button="更新帖子内容"
+                :submit="updateTopic"
+  />
+  <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
+                        :quote="comment.quote"
+  />
+  <div class="add-comment" @click="comment.show = true">
+    <el-icon><Plus/></el-icon>
+  </div>
 </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
+.add-comment {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 18px;
+  color:var(--el-color-primary);
+  text-align: center;
+  line-height: 40px;
+  background: var(--el-bg-color-overlay);
+  box-shadow: var(--el-box-shadow-light);
+
+  &:hover{
+    cursor: pointer;
+    background: var(--el-border-color-extra-light);
+  }
+}
+
 .topic-page{
   display: flex;
   flex-direction: column;
@@ -129,11 +196,14 @@ function interact(type, message) {
   .topic-main-right{
     width: 600px;
     padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
 
     .topic-content{
       font-size: 14px;
       line-height: 22px;
       opacity: 0.8;
+      flex: 1;
     }
   }
 }
