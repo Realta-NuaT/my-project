@@ -1,5 +1,5 @@
 <script setup>
-import { QuillEditor } from "@vueup/vue-quill"
+import {Delta, QuillEditor} from "@vueup/vue-quill"
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ref} from "vue";
 import {post} from "@/net";
@@ -7,21 +7,32 @@ import {ElMessage} from "element-plus";
 const props = defineProps({
   show:Boolean,
   tid:String,
-  quote:Number,
+  quote:Object,
 })
-const emit = defineEmits(["close"])
+const emit = defineEmits(["close", 'comment'])
+
+const init = () => content.value = new Delta()
 
 const content = ref()
 
 function submitComment() {
   post('api/forum/add-comment', {
     tid:props.tid,
-    quote:props.quote,
+    quote:props.quote ? props.quote.id : -1,
     content: JSON.stringify(content.value),
   },() =>{
     ElMessage.success('发表评论成功')
-    emit('close')
+    emit('comment')
   })
+}
+
+function deltaToSimpleText(delta) {
+  let str = ''
+  for (let op of JSON.parse(delta).ops) {
+    str += op.insert
+  }
+  if(str.length > 35) str = str.substring(0, 35) + '...'
+  return str
 }
 
 </script>
@@ -29,7 +40,8 @@ function submitComment() {
 <template>
   <div>
     <el-drawer :model-value="show"
-               title="发表评论"
+               :title="quote ? `发表对评论: ${deltaToSimpleText(quote.content)} 的回复` : '发表帖子回复'"
+               @open="init"
                @close="emit('close')"
                direction="btt" :size="270"
                :close-on-click-modal="false"
