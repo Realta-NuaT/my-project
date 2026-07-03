@@ -4,8 +4,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.Account;
+import org.example.entity.dto.AccountDetails;
+import org.example.entity.dto.AccountPrivacy;
 import org.example.entity.vo.request.*;
+import org.example.mapper.AccountDetailsMapper;
 import org.example.mapper.AccountMapper;
+import org.example.mapper.AccountPrivacyMapper;
 import org.example.service.AccountService;
 import org.example.utils.Const;
 import org.example.utils.FlowUtils;
@@ -32,6 +36,13 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
     FlowUtils flowUtils;
     @Resource
     PasswordEncoder passwordEncoder;
+
+    @Resource
+    AccountPrivacyMapper  privacyMapper;
+
+    @Resource
+    AccountDetailsMapper  detailsMapper;
+
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -74,8 +85,12 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         String password = passwordEncoder.encode(vo.getPassword());
         Account account = new Account(null,username,password,email,"user",null, new Date());
         if (this.save(account)) {
-             this.deleteEmailVerifyCode(email);
-             return null;
+            this.deleteEmailVerifyCode(email);
+            privacyMapper.insert(new AccountPrivacy(account.getId()));
+            AccountDetails details = new AccountDetails();
+            details.setId(account.getId());
+            detailsMapper.insert(details);
+            return null;
         }else{
             return "内部错误,请联系管理员";
         }

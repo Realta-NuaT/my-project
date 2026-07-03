@@ -213,7 +213,6 @@ const onQuillReady = () => {
 </script>
 
 <template>
-  <div>
     <el-drawer :model-value="show"
                direction="btt"
                @open="initEditor"
@@ -267,7 +266,6 @@ const onQuillReady = () => {
         </div>
       </div>
     </el-drawer>
-  </div>
 </template>
 
 <style scoped>

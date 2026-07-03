@@ -23,10 +23,10 @@ function takeAccessToken(){
         ElMessage.warning('登录状态已过期,请重新登录')
         return null
     }
-    return authObj.token
+    return authObj
 }
-function storeAccessToken(token,remember,expire){
-    const authObj={token:token,expire:expire}
+function storeAccessToken(token,remember,expire,role){
+    const authObj={token:token, expire:expire, role:role};
     const str = JSON.stringify(authObj)
     if(remember){
         localStorage.setItem(authItemName,str)
@@ -40,7 +40,7 @@ function deleteAccessToken(){
 }
 function accessHeader(){
     const token = takeAccessToken()
-    return token?{'Authorization': `Bearer ${takeAccessToken()}`}:{}
+    return token?{'Authorization': `Bearer ${takeAccessToken()?.token}`}:{}
 }
 
 function internalPost(url,data,header,success,failure,error=defaultError){
@@ -76,7 +76,7 @@ function  login(username,password,remember,success,failure=defaultFailure){
     },{
         'content-type': 'application/x-www-form-urlencoded',
     },(data)=>{
-        storeAccessToken(data.token,remember,data.expire)
+        storeAccessToken(data.token,remember,data.expireTime, data.role)
         ElMessage.success(`登录成功,欢迎${data.username}来到我们的系统`)
         success(data.data)
     },failure)
@@ -89,8 +89,12 @@ function logout(success,failure = defaultFailure){
     },failure)
 }
 
-function unauthorized(){
+function isUnauthorized(){
     return !takeAccessToken()
+}
+
+function isRoleAdmin(){
+    return takeAccessToken()?.role === 'admin'
 }
 
 let isRefreshing = false
@@ -121,4 +125,4 @@ axios.interceptors.response.use(
     }
 )
 
-export {login,logout,get,post,unauthorized,takeAccessToken,accessHeader}
+export {login,logout,get,post,isUnauthorized,takeAccessToken,accessHeader,isRoleAdmin}

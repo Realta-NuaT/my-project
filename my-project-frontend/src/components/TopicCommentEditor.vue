@@ -16,6 +16,10 @@ const init = () => content.value = new Delta()
 const content = ref()
 
 function submitComment() {
+  if (deltaToText(content.value).length > 2000) {
+    ElMessage.warning('评论字数已超过最大限制,请所见输入内容')
+    return
+  }
   post('api/forum/add-comment', {
     tid:props.tid,
     quote:props.quote ? props.quote.id : -1,
@@ -27,12 +31,22 @@ function submitComment() {
 }
 
 function deltaToSimpleText(delta) {
-  let str = ''
-  for (let op of JSON.parse(delta).ops) {
-    str += op.insert
-  }
+  let str = deltaToText(JSON.parse(delta))
   if(str.length > 35) str = str.substring(0, 35) + '...'
   return str
+}
+
+
+function deltaToText(delta) {
+  if (!delta?.ops) return ""
+  let str = ""
+  for (let op of delta.ops) {
+    if (typeof op.insert === 'string') {
+      str += op.insert
+    }
+    // 图片、视频、公式等非文本 insert 一律忽略
+  }
+  return str.replace(/\s/g, "")
 }
 
 </script>
@@ -51,7 +65,10 @@ function deltaToSimpleText(delta) {
           <quill-editor style="height: 120px" v-model:content="content"
                         placeholder="请发表友善的评论,不要使用脏话骂人,都是大学生,素质高一点"/>
         </div>
-        <div style="margin-top: 10px;text-align: right">
+        <div style="margin-top: 10px;display: flex">
+          <div style="flex:1 ; color: grey ; font-size: 13px">
+            当前字数 {{ deltaToText(content).length }} (最大支持2000字)
+          </div>
           <el-button type="success" @click="submitComment" plain>发表评论</el-button>
         </div>
       </div>

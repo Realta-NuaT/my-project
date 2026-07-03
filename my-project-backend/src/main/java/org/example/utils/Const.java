@@ -15,6 +15,7 @@ public class Const {
     public static final String FLOW_LIMIT_BLOCK = "flow:block:";
     //用户角色
     public static final String ROLE_DEFAULT = "user";
+    public static final String ROLE_ADMIN = "admin";
     public static final String ATTR_USER_ID = "userId";
     //论坛相关
     public static final String FORUM_WEATHER_CACHE = "weather:cache:";

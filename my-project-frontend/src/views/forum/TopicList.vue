@@ -125,7 +125,7 @@ navigator.geolocation.getCurrentPosition(position => {
 </script>
 
 <template>
-  <div style="display: flex; margin: 20px auto; gap: 20px; max-width: 900px;">
+  <div style="display: flex; margin: 20px auto; gap: 20px; max-width: 900px;padding: 0 20px">
     <div style="flex: 1">
       <light-card>
         <div class="create-topic" @click="editor = true">
@@ -163,7 +163,7 @@ navigator.geolocation.getCurrentPosition(position => {
                         @click="router.push('/index/topic-detail/'+item.id)">
               <div style="display: flex">
                 <div>
-                  <el-avatar :size="30" :src="`${axios.defaults.baseURL}/images${item.avatar}`"/>
+                  <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
                 </div>
                 <div style="margin-left: 7px;transform: translateY(-2px)">
                   <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>

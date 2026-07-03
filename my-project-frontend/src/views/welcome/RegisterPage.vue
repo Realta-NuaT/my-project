@@ -5,11 +5,11 @@ import {computed, reactive, ref} from "vue";
 import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import router from "@/router/index.js";
 import {ElMessage} from "element-plus";
-import {get, post} from "@/net/index.js";
+import {apiAuthAskCode, apiAuthRegister} from "@/net/api/User";
 
-const coldTime = ref(0)
+
 const formRef = ref()
-let timer = null
+
 
 const form = reactive({
   username: "",
@@ -59,42 +59,19 @@ const rule = {
   ]
 }
 
+
+const coldTime = ref(0)
+const timer = ref(null)
 function askCode() {
-  if (!isEmailValid.value) {
-    ElMessage.warning('请输入正确的电子邮件')
-    return
-  }
-
-  coldTime.value = 60 // 倒计时时间
-  clearInterval(timer) // 避免重复点击产生多个定时器
-
-  get(`/api/auth/ask-code?email=${form.email}&type=register`, () => {
-    ElMessage.success(`验证码已发送到邮箱: ${form.email}, 请注意查收`)
-
-    // 开始倒计时
-    timer = setInterval(() => {
-      if (coldTime.value > 0) {
-        coldTime.value--
-      } else {
-        clearInterval(timer) // 倒计时结束，清除定时器
-        timer = null
-      }
-    }, 1000)
-  }, (message) => {
-    ElMessage.warning(message)
-    coldTime.value = 0 // 请求失败，重置倒计时
-  })
+  apiAuthAskCode(form.email, coldTime, timer, isEmailValid)
 }
 
 const isEmailValid = computed(() => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email))
 
 function register(){
-  formRef.value.validate((valid) => {
-    if(valid){
-      post('/api/auth/register',{...form},()=>{
-        ElMessage.success('注册成功,欢迎加入我们')
-        router.push('/')
-      })
+  formRef.value.validate((isValid) => {
+    if(isValid){
+      apiAuthRegister({...form})
     }else {
       ElMessage.warning('请完整验证表单内容')
     }
