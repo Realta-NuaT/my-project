@@ -18,7 +18,7 @@ export const apiAuthRegister = (data) => {
     })
 }
 
-export const apiAuthAskCode = (email, coldTime, timer, isEmailValid) => {
+export const apiAuthAskCode = (email, type='register', coldTime, timer, isEmailValid) => {
     if (!isEmailValid.value) {
         ElMessage.warning('请输入正确的电子邮件')
         return
@@ -28,7 +28,7 @@ export const apiAuthAskCode = (email, coldTime, timer, isEmailValid) => {
         timer.value = null
     }
     coldTime.value = 60 // 倒计时时间
-    get(`/api/auth/ask-code?email=${email}&type=register`, () => {
+    get(`/api/auth/ask-code?email=${email}&type=${type}`, () => {
         ElMessage.success(`验证码已发送到邮箱: ${email}, 请注意查收`)
         // 开始倒计时
         timer.value = setInterval(() => {
@@ -55,3 +55,36 @@ export const apiAuthResetPassword = (data) => {
         }
     )
 }
+
+export const apiUserPrivacy = ( success ) =>
+    get('/api/user/privacy', success )
+
+export const apiUserPrivacySave = (data, loadingRef) =>{
+    loadingRef.value = true
+    post('api/user/save-privacy',data,()=>{
+        ElMessage.success('隐私设置修改成功!')
+        loadingRef.value = false
+    })
+}
+
+export const apiUserChangePassword = ( data, success ) =>
+    post('/api/user/change-password',data,success )
+
+export const apiUserDetails = ( success ) => {
+    get('/api/user/details',success)
+}
+
+export const apiUserDetailSave = (form, success, failure) =>
+    post('api/user/save-details',form,success, failure)
+
+export const apiUserModifyEmail = (form, success) =>
+    post('api/user/modify-email',form,success,(data)=>{ElMessage.warning(data)})
+
+export const apiNotificationList = (notification) =>
+    get('/api/notification/list',data=> notification.value = data )
+
+export const apiNotificationDeleteAll = (success) =>
+    get('/api/notification/delete-all',success)
+
+export const apiNotificationDelete = (id, success) =>
+    get(`api/notification/delete?id=${id}`,success)

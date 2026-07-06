@@ -3,14 +3,13 @@
 import Card from "@/components/Card.vue";
 import {Message, Refresh, Select, User} from "@element-plus/icons-vue";
 import {useStore} from "@/store/index.js";
-import {computed, reactive, ref} from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import {ElMessage} from "element-plus";
-import {accessHeader, get, post} from "@/net/index.js";
+import {accessHeader} from "@/net/index.js";
 import axios from "axios";
+import {apiAuthAskCode, apiUserDetails, apiUserDetailSave, apiUserModifyEmail} from "@/net/api/user";
 const store = useStore();
 const registerTime = computed(() => new Date(store.user.registerTime).toLocaleString())
-let timer = null
-const coldTime = ref(0)
 
 const desc = ref("")
 const baseFormRef = ref()
@@ -28,7 +27,7 @@ const emailForm = reactive({
   email: '',
   code: ''
 })
-const validateUsername = (rule, value, callback) => {
+const validateUsername = (_, value, callback) => {
   if(value === ''){
     callback(new Error('请输入用户名'))
   }else if(!/^[a-zA-z0-9\u4e00-\u9fa5]+$/.test(value)){
@@ -37,7 +36,7 @@ const validateUsername = (rule, value, callback) => {
     callback()
   }
 }
-const validatePhone = (rule, value, callback) => {
+const validatePhone = (_, value, callback) => {
   if(value === ''){
     callback(new Error('请输入手机号'))
   }else if(!/^1\d{10}$/.test(value)){
@@ -47,31 +46,11 @@ const validatePhone = (rule, value, callback) => {
   }
 }
 
+const timer = ref(null)
+const coldTime = ref(0)
 function askCode() {
   emailFormRef.value.validate((valid) => {
-    if (valid) {
-      if (!isEmailValid.value) {
-        ElMessage.warning('请输入正确的电子邮件')
-        return
-      }
-      coldTime.value = 60 // 倒计时时间
-      clearInterval(timer) // 避免重复点击产生多个定时器
-      get(`/api/auth/ask-code?email=${emailForm.email}&type=modify`, () => {
-        ElMessage.success(`验证码已发送到邮箱: ${emailForm.email}, 请注意查收`)
-        // 开始倒计时
-        timer = setInterval(() => {
-          if (coldTime.value > 0) {
-            coldTime.value--
-          } else {
-            clearInterval(timer) // 倒计时结束，清除定时器
-            timer = null
-          }
-        }, 1000)
-      }, (message) => {
-        ElMessage.warning(message)
-        coldTime.value = 0 // 请求失败，重置倒计时
-      })
-    }
+    apiAuthAskCode(emailForm.email, 'modify', coldTime, timer, isEmailValid)
   })
 }
 const isEmailValid = computed(() => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(emailForm.email))
@@ -103,12 +82,12 @@ function saveDetails(){
   baseFormRef.value.validate(isValid => {
     if(isValid){
       loading.base = true
-      post('api/user/save-details',baseForm,()=>{
+      apiUserDetailSave(baseForm,() => {
         ElMessage.success('用户信息保存成功')
         store.user.username = baseForm.username
         desc.value = baseForm.desc
         loading.base = false
-      }, (message) => {
+      },message => {
         ElMessage.warning(message)
         loading.base = false
       })
@@ -116,25 +95,13 @@ function saveDetails(){
   })
 }
 
-get('/api/user/details',data=>{
-  baseForm.username = store.user.username
-  baseForm.gender = data.gender
-  baseForm.phone = data.phone
-  baseForm.qq = data.qq
-  baseForm.wx = data.wx
-  baseForm.desc =desc.value = data.desc
-  emailForm.email = store.user.email
-  loading.form = false
-})
 
 function modifyEmail(){
   if(isEmailValid.value){
-    post('api/user/modify-email',emailForm,()=>{
+    apiUserModifyEmail(emailForm,()=>{
       ElMessage.success('邮件修改成功')
       store.user.email = emailForm.email
       emailForm.code = ''
-    },(data)=>{
-      ElMessage.warning(data)
     })
   }
 }
@@ -156,6 +123,15 @@ function uploadSuccess(response){
 
 }
 
+onMounted(() => {
+  apiUserDetails(data=>{
+    baseForm.username = store.user.username
+    Object.assign(baseForm, data)
+    baseForm.desc =desc.value = data.desc
+    emailForm.email = store.user.email
+    loading.form = false
+  })
+})
 
 </script>
 

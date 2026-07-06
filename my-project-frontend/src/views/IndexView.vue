@@ -1,5 +1,4 @@
 <script setup>
-import {get} from "@/net/index.js";
 import {inject, reactive, ref} from "vue";
 import {
   Bell,
@@ -12,6 +11,7 @@ import {
 } from "@element-plus/icons-vue";
 import LightCard from "@/components/LightCard.vue";
 import UserInfo from "@/components/UserInfo.vue";
+import {apiNotificationDelete, apiNotificationDeleteAll, apiNotificationList} from "@/net/api/user";
 const loading = inject('userLoading');
 const searchInput = reactive({
   type:'1',
@@ -52,17 +52,17 @@ const userMenu =  [
 ]
 
 const loadNotification =
-    () => get('/api/notification/list',data=> notification.value = data )
+    () => apiNotificationList(notification)
 loadNotification()
 
 function confirmNotification(id,url){
-  get(`api/notification/delete?id=${id}`,() => {
+  apiNotificationDelete(id,() => {
     loadNotification()
     window.open(url)
   })
 }
 function deleteAllNotification(){
-  get('/api/notification/delete-all',loadNotification)
+  apiNotificationDeleteAll(loadNotification)
 }
 
 </script>

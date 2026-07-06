@@ -2,8 +2,8 @@
 import {Delta, QuillEditor} from "@vueup/vue-quill"
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import {ref} from "vue";
-import {post} from "@/net";
 import {ElMessage} from "element-plus";
+import {apiForumCommentSubmit} from "@/net/api/forum";
 const props = defineProps({
   show:Boolean,
   tid:String,
@@ -20,7 +20,7 @@ function submitComment() {
     ElMessage.warning('评论字数已超过最大限制,请所见输入内容')
     return
   }
-  post('api/forum/add-comment', {
+  apiForumCommentSubmit({
     tid:props.tid,
     quote:props.quote ? props.quote.id : -1,
     content: JSON.stringify(content.value),

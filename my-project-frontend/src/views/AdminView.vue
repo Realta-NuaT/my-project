@@ -14,7 +14,7 @@ import {
 import UserInfo from "@/components/UserInfo.vue";
 import {get} from "@/net";
 import {useStore} from "@/store";
-import {ref} from "vue";
+import {inject, ref} from "vue";
 
 const adminMenu = [
   {
@@ -41,12 +41,7 @@ const adminMenu = [
   }
 ]
 
-const loading = ref(true);
-const store = useStore();
-get('/api/user/info',(data)=>{
-  store.user = data
-  loading.value = false
-})
+const loading = inject('userLoading')
 
 </script>
 

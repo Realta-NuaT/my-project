@@ -3,10 +3,7 @@
 
 import {computed, reactive, ref} from "vue";
 import {EditPen, Lock, Message} from "@element-plus/icons-vue";
-import {ElMessage} from "element-plus";
-import {get, post} from "@/net/index.js";
-import router from "@/router/index.js";
-import {apiAuthAskCode, apiAuthResetConform, apiAuthResetPassword} from "@/net/api/User";
+import {apiAuthAskCode, apiAuthResetConform, apiAuthResetPassword} from "@/net/api/user";
 const formRef = ref()
 const active = ref(0)
 const form = reactive({
@@ -48,7 +45,7 @@ const rule = {
 const timer = ref(null)
 const coldTime = ref(0)
 function askCode() {
-  apiAuthAskCode(form.email, coldTime, timer, isEmailValid)
+  apiAuthAskCode(form.email, 'reset', coldTime, timer, isEmailValid)
 }
 
 const isEmailValid = computed(() => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email))
@@ -83,7 +80,7 @@ function doReset(){
     </div>
     <div style="margin: 0 20px" v-if="active === 0">
       <div style="margin-top: 80px">
-        <div style="margin-top: 25px;font-weight: bold">充值密码</div>
+        <div style="margin-top: 25px;font-weight: bold">重置密码</div>
         <div style="margin-top: 14px;color:grey;font-weight: bold">请输入需要重置密码的电子邮件</div>
       </div>
       <div style="margin-top: 50px;">

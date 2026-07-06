@@ -5,7 +5,7 @@ import {computed, reactive, ref} from "vue";
 import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import router from "@/router/index.js";
 import {ElMessage} from "element-plus";
-import {apiAuthAskCode, apiAuthRegister} from "@/net/api/User";
+import {apiAuthAskCode, apiAuthRegister} from "@/net/api/user";
 
 
 const formRef = ref()

@@ -4,7 +4,7 @@
 import {useDark, useToggle} from "@vueuse/core";
 import {onMounted, provide, ref} from "vue";
 import {isUnauthorized} from "@/net";
-import {apiUserInfo} from "@/net/api/User";
+import {apiUserInfo} from "@/net/api/user";
 
 useDark({
   selector:'html',

@@ -2,7 +2,7 @@
 
 import LightCard from "@/components/LightCard.vue";
 import {
-  ArrowRight, ArrowRightBold,
+  ArrowRightBold,
   Calendar, CircleCheck,
   Clock,
   CollectionTag,
@@ -15,16 +15,15 @@ import {
   Picture, Star
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive, ref, watch} from "vue";
-import {get} from "@/net/index.js";
+import {computed, onMounted, reactive, ref, watch} from "vue";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
 import {useStore} from "@/store";
-import axios from "axios";
 import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
 import TopicCollectList from "@/components/TopicCollectList.vue";
+import {apiForumTopicList, apiForumTopTopics, apiForumWeather} from "@/net/api/forum";
 const store = useStore();
 
 const isLoading = ref(false)
@@ -53,31 +52,23 @@ const today = computed(()=>{
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 })
 
-
-get('api/forum/top-topic',data => topics.top = data)
-
-
-
 function updateList(){
   if (topics.end || isLoading.value) return  // 正在加载则直接退出
   isLoading.value = true
-
-  get(`/api/forum/list-topic?page=${topics.page}&type=${topics.type}`, data=> {
-    if(data != null){
-      data.forEach(d => topics.list.push(d))
-      topics.page++
-
-    }
-    if(!data || data.length < 10){
-      topics.end = true
-    }
-        isLoading.value = false
-  },
+  apiForumTopicList(topics.page, topics.type,data=> {
+      if(data != null){
+        data.forEach(d => topics.list.push(d))
+        topics.page++
+      }
+      if(!data || data.length < 10){
+        topics.end = true
+      }
+      isLoading.value = false
+    },
     () => {
       // 可以加一个错误回调
       isLoading.value = false
-    }
-  )
+    })
 }
 
 function onTopicCreate(){
@@ -96,7 +87,7 @@ function resetList(){
 navigator.geolocation.getCurrentPosition(position => {
   const longitude = position.coords.longitude;
   const latitude = position.coords.latitude;
-  get(`/api/forum/weather?longitude=${longitude}&latitude=${latitude}`, data =>{
+  apiForumWeather(longitude, latitude, data =>{
     Object.assign(weather, data)
     weather.success = true;
   })
@@ -112,7 +103,7 @@ navigator.geolocation.getCurrentPosition(position => {
       default:
         ElMessage.warning('定位失败，已使用默认位置')
     }
-    get('/api/forum/weather?longitude=118.280350&latitude=35.121960',data => {
+    apiForumWeather(118.280350, 35.121960, data =>{
       Object.assign(weather, data)
       weather.success = true;
     })
@@ -120,6 +111,10 @@ navigator.geolocation.getCurrentPosition(position => {
   timeout: 8000, // 延长超时到8秒，减少误判
   enableHighAccuracy: true, // 高精度，提升定位精确率
   maximumAge: 300000 // 允许复用5分钟内缓存定位
+})
+
+onMounted(() => {
+  apiForumTopTopics(data => topics.top = data)
 })
 
 </script>

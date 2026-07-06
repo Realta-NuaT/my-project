@@ -3,7 +3,7 @@ import {inject, reactive, ref} from "vue";
 import {Lock, User} from '@element-plus/icons-vue'
 import {login} from "@/net/index.js";
 import router from "@/router/index.js";
-import {apiUserInfo} from "@/net/api/User";
+import {apiUserInfo} from "@/net/api/user";
 
 const form=reactive({
   username: "",

@@ -5,13 +5,13 @@ import {computed, reactive, ref} from "vue"
 import {Delta, QuillEditor} from "@vueup/vue-quill"
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import axios from "axios"
-import {accessHeader, get, post} from "@/net/index.js"
+import {accessHeader} from "@/net/index.js"
 import {ElMessage} from "element-plus"
-
 import { Quill } from '@vueup/vue-quill'  // 需要先导入 Quill
 import ImageResize from 'quill-image-resize-vue'
 import ColorDot from "@/components/ColorDot.vue";
 import {useStore} from "@/store";
+import {apiForumTopicCreate} from "@/net/api/forum";
 Quill.register('modules/imageResize', ImageResize)
 const store = useStore();
 
@@ -35,17 +35,14 @@ const props = defineProps({
   },
   submit: {
     default: (editor, success) => {
-      post('/api/forum/create-topic',
-        {
+      apiForumTopicCreate({
           type: editor.type.id,
           title: editor.title,
           content: editor.text
-        },
-        () => {
+        }, () => {
           ElMessage.success("帖子发表成功！" )
           success()
-        }
-      )
+        })
     },
     type: Function
   }
