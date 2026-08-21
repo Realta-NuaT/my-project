@@ -7,6 +7,9 @@ public class Const {
     //邮件验证
     public static final String VERIFY_EMAIL_LIMIT = "verify:email:limit";
     public static final String VERIFY_EMAIL_DATA = "verify:password:data";
+    //消息队列
+    public static final String MQ_MAIL = "mail";
+    public static final String MQ_ERROR = "error";
     //过滤器优先级
     public final static int ORDER_FLOW_LIMIT = -101;
     public final static int ORDER_CORS = -102;

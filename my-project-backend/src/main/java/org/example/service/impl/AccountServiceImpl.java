@@ -11,6 +11,7 @@ import org.example.mapper.AccountDetailsMapper;
 import org.example.mapper.AccountMapper;
 import org.example.mapper.AccountPrivacyMapper;
 import org.example.service.AccountService;
+import org.example.service.EmailService;
 import org.example.utils.Const;
 import org.example.utils.FlowUtils;
 import org.springframework.amqp.core.AmqpTemplate;
@@ -29,8 +30,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> implements AccountService {
     @Resource
-    AmqpTemplate amqpTemplate;
-    @Resource
     StringRedisTemplate stringRedisTemplate;
     @Resource
     FlowUtils flowUtils;
@@ -42,6 +41,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
 
     @Resource
     AccountDetailsMapper  detailsMapper;
+
+    @Resource
+    EmailService emailService;
 
 
     @Override
@@ -56,15 +58,14 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
                 .build();
     }
     @Override
-    public String registerEmailVerityCode(String type, String email, String ip) {
+    public String registerEmailVerifyCode(String type, String email, String ip) {
         synchronized (ip.intern()){
             if(!varifyLimit(ip)) {
                 return "请求频繁,请稍后访问";
             }
             Random random = new Random();
             int code = random.nextInt(899999) + 100000;
-            Map<String,Object> data = Map.of("type",type,"email",email,"code",code);
-            amqpTemplate.convertAndSend("mail",data);
+            emailService.sendVerifyEmail(type, email, code);
             stringRedisTemplate.
                     opsForValue().
                     set(Const.VERIFY_EMAIL_DATA + email,String.valueOf(code),3, TimeUnit.MINUTES);

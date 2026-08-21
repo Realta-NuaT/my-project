@@ -14,8 +14,6 @@ import org.example.service.AccountService;
 import org.example.utils.ControllerUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 @Validated
 @RestController
@@ -33,7 +31,7 @@ public class AuthorizeController {
                                   @RequestParam @Pattern(regexp = "(register|reset|modify)") String type,
                                   HttpServletRequest request){
         return utils.messageHandle(
-                ()->accountService.registerEmailVerityCode(type,email,request.getRemoteAddr())
+                ()->accountService.registerEmailVerifyCode(type,email,request.getRemoteAddr())
         );
     }
 
