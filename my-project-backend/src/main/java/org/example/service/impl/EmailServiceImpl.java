@@ -1,5 +1,6 @@
 package org.example.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.EmailRecord;
 import org.example.mapper.EmailRecordMapper;
@@ -7,6 +8,8 @@ import org.example.service.EmailService;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.stereotype.Service;
 
+import java.sql.Wrapper;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -34,5 +37,10 @@ public class EmailServiceImpl implements EmailService {
         };
         recordMapper.insert(emailRecord);
         amqpTemplate.convertAndSend("mail",emailRecord);
+    }
+
+    @Override
+    public List<EmailRecord> listEmailRecord() {
+        return recordMapper.selectList(Wrappers.emptyWrapper());
     }
 }
