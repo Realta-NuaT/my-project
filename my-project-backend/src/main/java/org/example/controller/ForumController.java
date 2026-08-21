@@ -7,12 +7,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import org.example.entity.RestBean;
+import org.example.entity.dto.Account;
 import org.example.entity.dto.Interact;
 import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
 import org.example.entity.vo.request.TopicUpdateVO;
 import org.example.entity.vo.response.*;
 import org.example.mapper.TopicTypeMapper;
+import org.example.service.AccountService;
 import org.example.service.TopicService;
 import org.example.service.WeatherService;
 import org.example.utils.Const;
@@ -36,6 +38,9 @@ public class ForumController {
     @Resource
     ControllerUtils utils;
 
+    @Resource
+    AccountService accountService;
+
     @GetMapping("/weather")
     public RestBean<WeatherVO> weather(double longitude, double latitude){
         WeatherVO vo = service.fetchWeather(longitude, latitude);
@@ -54,6 +59,10 @@ public class ForumController {
     @PostMapping("/create-topic")
     public RestBean<Void> createTopic(@Valid @RequestBody TopicCreateVO vo ,
                                       @RequestAttribute(Const.ATTR_USER_ID) int id){
+        Account account = accountService.findAccountById(id);
+        if(account.isMute()){
+            return RestBean.forbidden("您已被禁言,无法创建新的主题");
+        }
         return utils.messageHandle(()->topicService.createTopic(id,vo));
     }
     @GetMapping("list-topic")
@@ -97,6 +106,10 @@ public class ForumController {
     @PostMapping("/add-comment")
     public RestBean<Void> addComment(@Valid @RequestBody AddCommentVO vo,
                                      @RequestAttribute(Const.ATTR_USER_ID) int id){
+        Account account = accountService.findAccountById(id);
+        if(account.isMute()){
+            return RestBean.forbidden("您已被禁言,无法发表新的评论");
+        }
         return utils.messageHandle(()->topicService.createComment(id,vo));
     }
 

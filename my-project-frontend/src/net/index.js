@@ -9,16 +9,29 @@ const defaultFailure=(message,code,url)=>{
     console.warn(`请求地址:${url},状态码${code},错误信息,${message}`)
     ElMessage.warning(message)
 }
-const defaultError=(err)=>{
-    console.error(err)
-    ElMessage.warning('发生了一些错误,请联系管理员')
+const defaultError = async (message, err) => {
+    console.error(message?message:'无信息' ,err)
+
+    if (err.response?.status === 401) {
+        deleteAccessToken()
+
+        ElMessage.error(message ? message : '登录已失效，请重新登录')
+
+        if (router.currentRoute.value.path !== '/') {
+            await router.push('/')
+        }
+
+        return
+    }
+
+    ElMessage.warning('发生了一些错误，请联系管理员')
 }
 
 function takeAccessToken(){
     const str = localStorage.getItem(authItemName)||sessionStorage.getItem(authItemName)
     if(!str) return  null
     const authObj = JSON.parse(str)
-    if(authObj.expire<=new Date()){
+    if(new Date(authObj.expire) <= Date.now()){
         deleteAccessToken(authObj)
         ElMessage.warning('登录状态已过期,请重新登录')
         return null
@@ -43,23 +56,54 @@ function accessHeader(){
     return token?{'Authorization': `Bearer ${takeAccessToken()?.token}`}:{}
 }
 
-function internalPost(url,data,header,success,failure,error=defaultError){
-    axios.post(url,data,{headers:header}).then(({data})=>{
-        if(data.code === 200){
-            success(data.data)
-        }else{
-            failure(data.message,data.code,url)
-        }
-    }).catch(err=>error(err))
+function internalPost(
+    url,
+    data,
+    header,
+    success,
+    failure,
+    error = defaultError
+) {
+    axios.post(url, data, {headers: header})
+        .then(({data}) => {
+
+            // 后端返回 401
+            if (data.code === 401) {
+                return error(data.message,{
+                    response: {
+                        status: 401
+                    }
+                })
+            }
+
+            if (data.code === 200) {
+                success(data.data)
+            } else {
+                failure(data.message, data.code, url)
+            }
+        })
+        .catch(err => error(data.message, err))
 }
-function internalGet(url, header, success, failure, error=defaultError){
-    axios.get(url,{headers:header}).then(({data})=>{
-        if(data.code === 200){
-            success(data.data)
-        }else{
-            failure(data.message,data.code,url)
-        }
-    }).catch(err=>error(err))
+function internalGet(url, header, success, failure, error = defaultError) {
+    axios.get(url, {headers: header})
+        .then(({data}) => {
+
+            // 后端返回 401
+            if (data.code === 401) {
+                return error(data.message,{
+                    response: {
+                        status: 401
+                    }
+                })
+            }
+
+            if (data.code === 200) {
+                success(data.data)
+            } else {
+                failure(data.message, data.code, url)
+            }
+        })
+        .catch(err => error(data.message,err))
 }
 
 function get(url,success,failure = defaultFailure){
@@ -96,33 +140,5 @@ function isUnauthorized(){
 function isRoleAdmin(){
     return takeAccessToken()?.role === 'admin'
 }
-
-let isRefreshing = false
-axios.interceptors.response.use(
-    response => response,
-    async error => {
-        const { config, response } = error
-        if (response?.status === 401) {
-            // 如果正在刷新 token，就等刷新结束后重试请求，不要直接跳转
-            if (!isRefreshing) {
-                isRefreshing = true
-                try {
-                    // 尝试用 refresh token 刷新 access token（如果有的话）
-                    // const newToken = await refreshAccessToken()
-                    // 若刷新成功，更新本次请求的 token 并重试
-                    // config.headers.Authorization = `Bearer ${newToken}`
-                    // return request(config)
-                    // 若无刷新逻辑，直接清除并跳转
-                    deleteAccessToken()
-                    router.push('/')
-                    ElMessage.error('登录已失效，请重新登录')
-                } finally {
-                    isRefreshing = false
-                }
-            }
-        }
-        return Promise.reject(error)
-    }
-)
 
 export {login,logout,get,post,isUnauthorized,takeAccessToken,accessHeader,isRoleAdmin}

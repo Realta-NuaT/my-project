@@ -1,5 +1,5 @@
 import {createRouter, createWebHistory} from "vue-router";
-import {isUnauthorized} from "@/net/index.js";
+import {isRoleAdmin, isUnauthorized} from "@/net/index.js";
 import {ElMessage} from "element-plus";
 
 const router = createRouter({
@@ -62,14 +62,26 @@ const router = createRouter({
             name: 'admin',
             component:()=>import('@/views/AdminView.vue'),
             children: [
+                {
+                    path:'',
+                    name:'admin-welcome',
+                    component:()=>import('@/views/admin/WelcomeAdmin.vue'),
+                },                {
+                    path:'user',
+                    name:'admin-user',
+                    component:()=>import('@/views/admin/UserAdmin.vue'),
+                },                {
+                    path:'forum',
+                    name:'admin-forum',
+                    component:()=>import('@/views/admin/ForumAdmin.vue'),
+                }
                 ]
         }
     ]
 });
 
 router.beforeEach((to, from, next) => {
-    const unauthorized = isUnauthorized()  // true = 未登录
-
+    const unauthorized = isUnauthorized(),admin = isRoleAdmin()  // true = 未登录
     // 安全获取路由名称（避免 undefined 报错）
     const routeName = to.name || ''
 
@@ -81,6 +93,8 @@ router.beforeEach((to, from, next) => {
     else if (unauthorized && !routeName.startsWith('welcome-')) {
         ElMessage.warning('请您先登录再进行访问')
         next('/')  // 重定向到登录页
+    }else if(routeName.startsWith('admin') && !admin) {
+        next('/index')
     }
     // 3. 其余情况正常放行
     else {

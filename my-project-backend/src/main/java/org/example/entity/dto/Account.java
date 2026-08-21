@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.example.entity.BaseData;
 
 import java.util.Date;
 
 @Data
 @TableName("db_account")
+@NoArgsConstructor
 @AllArgsConstructor
 public class Account implements BaseData {
     @TableId(type = IdType.AUTO)
@@ -21,4 +23,6 @@ public class Account implements BaseData {
     String role;
     String avatar;
     Date registerTime;
+    boolean mute;
+    boolean banned;
 }

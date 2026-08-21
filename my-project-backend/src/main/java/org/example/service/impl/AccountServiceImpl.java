@@ -83,7 +83,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
         if(this.existsAccountByEmail(email)) return "此电子邮件已被其他用户注册";
         if(this.existsAccountByUsername(username)) return "此用户名已被注册,请更换用户名";
         String password = passwordEncoder.encode(vo.getPassword());
-        Account account = new Account(null,username,password,email,"user",null, new Date());
+        Account account = new Account(null,username,password,email,"user",null, new Date(),false,false);
         if (this.save(account)) {
             this.deleteEmailVerifyCode(email);
             privacyMapper.insert(new AccountPrivacy(account.getId()));
@@ -143,6 +143,14 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper,Account> imple
                 .set("password",passwordEncoder.encode(vo.getNew_password()))
                 .update();
         return success ? null : "未知错误,请联系管理员";
+    }
+
+    @Override
+    public void modifyPassword(int id, String newPassword) {
+        this.update()
+                .eq("id",id)
+                .set("password",passwordEncoder.encode(newPassword))
+                .update();
     }
 
     @Override

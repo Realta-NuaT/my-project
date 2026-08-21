@@ -14,15 +14,17 @@ import {
 import UserInfo from "@/components/UserInfo.vue";
 import {get} from "@/net";
 import {useStore} from "@/store";
-import {inject, ref} from "vue";
+import {inject, onMounted, ref} from "vue";
+import router from "@/router";
+import {useRoute, useRouter} from "vue-router";
 
 const adminMenu = [
   {
     title:'校园论坛管理',
     icon:Location,
     sub:[
-      {title:'用户管理', icon:User,index:''},
-      {title:'帖子广场管理', icon:ChatDotSquare,index:''},
+      {title:'用户管理', icon:User,index:'/admin/user'},
+      {title:'帖子广场管理', icon:ChatDotSquare,index:'/admin/forum'},
       {title:'失物招领管理', icon:Bell,index:''},
       {title:'校园活动管理', icon:Notification,index:''},
       {title:'表白墙管理', icon:Umbrella,index:''},
@@ -41,7 +43,45 @@ const adminMenu = [
   }
 ]
 
+const route = useRoute();
 const loading = inject('userLoading')
+const pageTabs = ref([])
+
+function handleTabClick({ props }){
+  router.push(props.name)
+}
+
+function handleTabClose(name){
+  const index = pageTabs.value.findIndex(tab => tab.name === name);
+  const isCurrent = name === route.fullPath
+  pageTabs.value.splice(index, 1);
+  if(pageTabs.value.length > 0){
+    if(isCurrent){
+      router.push(pageTabs.value[Math.max(0,index - 1)].name);
+    }
+  }else{
+    router.push('/admin')
+  }
+}
+
+function addAdminTab(menu) {
+  if(!menu.index) return
+  if(pageTabs.value.findIndex(tab => tab.name === menu.index) < 0){
+    pageTabs.value.push({
+      title: menu.title,
+      name: menu.index
+    })
+  }
+}
+
+onMounted(() =>{
+  const initPage = adminMenu
+      .flatMap(menu => menu.sub)
+      .find(sub => sub.index === route.fullPath)
+  if(initPage){
+    addAdminTab(initPage)
+  }
+})
 
 </script>
 
@@ -67,7 +107,9 @@ const loading = inject('userLoading')
                 </el-icon>
                 <span><b>{{ menu.title }}</b></span>
               </template>
-              <el-menu-item :index="subMenu.index" v-for="subMenu in menu.sub">
+              <el-menu-item :index="subMenu.index"
+                            @click="addAdminTab(subMenu)"
+                            v-for="subMenu in menu.sub">
                 <template #title>
                   <el-icon>
                     <component :is="subMenu.icon"/>
@@ -81,10 +123,28 @@ const loading = inject('userLoading')
       </el-aside>
       <el-container>
         <el-header class="admin-content-header">
-          <div style="flex: 1"></div>
+          <div style="flex: 1">
+            <el-tabs type="card"
+                     :model-value="route.fullPath"
+                     closable
+                     @tab-remove="handleTabClose"
+                     @tab-click="handleTabClick"
+            >
+              <el-tab-pane v-for="tab in pageTabs"
+                           :label="tab.title"
+                           :name="tab.name"
+                           :key="tab.name"/>
+            </el-tabs>
+          </div>
           <user-info/>
         </el-header>
-        <el-main>Main</el-main>
+        <el-main>
+          <router-view v-slot="{ Component }">
+            <keep-alive>
+              <component :is="Component"/>
+            </keep-alive>
+          </router-view>
+        </el-main>
       </el-container>
     </el-container>
   </div>
@@ -108,13 +168,42 @@ const loading = inject('userLoading')
     }
   }
 
-  .admin-content-header{
+  .admin-content-header {
     border-bottom: solid 1px var(--el-border-color);
     height: 55px;
     display: flex;
     align-items: center;
     box-sizing: border-box;
+
+    :deep(.el-tabs__header) {
+      height: 32px;
+      margin-bottom: 0;
+      border-bottom: none;
+      overflow: visible; /* 防止顶部边框被裁 */
+    }
+
+    :deep(.el-tabs__nav-wrap),
+    :deep(.el-tabs__nav-scroll) {
+      overflow: visible; /* 关键：Element Plus 默认这里可能是 hidden */
+    }
+
+    :deep(.el-tabs__nav) {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: none;
+    }
+
+    :deep(.el-tabs__item) {
+      height: 32px;
+      padding: 0 15px !important;
+      border-radius: 6px;
+      border: 1px solid var(--el-border-color) !important;
+      box-sizing: border-box; /* 高度包含边框，避免溢出 */
+      line-height: 30px;      /* 32px - 上下边框 2px */
+    }
   }
 }
 
 </style>
+

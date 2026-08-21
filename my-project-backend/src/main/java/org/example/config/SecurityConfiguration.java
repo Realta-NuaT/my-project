@@ -56,6 +56,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("api/admin/**").hasRole(Const.ROLE_ADMIN)
                         .anyRequest().hasAnyRole(Const.ROLE_DEFAULT, Const.ROLE_ADMIN)
                 )
                 .formLogin(conf -> conf
@@ -104,6 +105,10 @@ public class SecurityConfiguration {
         } else if(exceptionOrAuthentication instanceof Authentication authentication){
             User user = (User) authentication.getPrincipal();
             Account account = service.findAccountByUsernameOrEmail(user.getUsername());
+            if(account.isBanned()){
+                writer.write(RestBean.forbidden("登录失败,此账户已被封禁").asJsonString());
+                return;
+            }
             String jwt = utils.createJwt(user, account.getUsername(), account.getId());
             if(jwt == null) {
                 writer.write(RestBean.forbidden("登录验证频繁，请稍后再试").asJsonString());

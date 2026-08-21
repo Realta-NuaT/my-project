@@ -13,6 +13,7 @@ public class Const {
     //请求频率限制
     public static final String FLOW_LIMIT_COUNTER = "flow:counter:";
     public static final String FLOW_LIMIT_BLOCK = "flow:block:";
+    public static final String BANNED_BLOCK = "banned:block:";
     //用户角色
     public static final String ROLE_DEFAULT = "user";
     public static final String ROLE_ADMIN = "admin";

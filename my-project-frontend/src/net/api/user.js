@@ -88,3 +88,15 @@ export const apiNotificationDeleteAll = (success) =>
 
 export const apiNotificationDelete = (id, success) =>
     get(`api/notification/delete?id=${id}`,success)
+
+export const apiUserList = (page, size, success) =>
+    get(`api/admin/user/list?page=${page}&size=${size}`, success)
+
+export const apiUserDetailTotal = (id, success) =>
+    get(`api/admin/user/detail?id=${id}`,success)
+
+export const apiUserSave = (data, success) =>
+    post('api/admin/user/save?',data, success)
+
+export const apiUserModifyPassword = (data, success) =>
+    post('api/admin/user/change-password',data,success)
