@@ -1,13 +1,155 @@
 <script setup>
 
+
+import {reactive, ref, watchEffect} from "vue";
+import {
+    apiForumTopicAllList,
+    apiForumTopicDelete,
+    apiForumTopicLocked,
+    apiForumTopicTop,
+    apiForumTypes
+} from "@/net/api/forum";
+import {User} from "@element-plus/icons-vue";
+import {useStore} from "@/store";
+import {ElMessage, ElMessageBox} from "element-plus";
+
+const store = useStore();
+
+const topicList = reactive({
+    list:[],
+    page:1,
+    size:10,
+    total:0,
+})
+
+const types = ref([])
+const findType = (type) =>  types.value.find(item=>item.id === type)
+
+const deleteTopic = id => {
+    ElMessageBox.confirm('您确定要删除这个帖子吗,删除后永久无法找回?', '删除帖子',{
+        callback: value => {
+            if(value === 'confirm') {
+                apiForumTopicDelete(id, () => {
+                    refreshList()
+                    ElMessage.success('帖子删除成功')
+                })
+            }
+        }
+    })
+}
+
+const topTopic = ( id, status ) => {
+    apiForumTopicTop({ id, status }, data => {
+        ElMessage.success('帖子置顶状态更新成功')
+        refreshList()
+    })
+}
+
+const lockTopic = ( id, status ) => {
+    apiForumTopicLocked({ id, status }, data => {
+        ElMessage.success('帖子锁定状态更新成功')
+        refreshList()
+    })
+}
+
+const refreshList = () => {
+    apiForumTopicAllList(topicList.page, topicList.size, data => {
+        topicList.list = data.list
+        topicList.total = data.total
+    });
+}
+
+watchEffect(() => refreshList())
+
+apiForumTypes(data => types.value = data)
+
 </script>
 
 <template>
-  <div>
-    我是论坛管理管理
+  <div class="forum-admin">
+      <div class="title">
+          <el-icon><User/></el-icon>
+          论坛帖子列表
+      </div>
+      <div class="desc">
+          在这里管理论坛的所有帖子,并对帖子进行各种操作和管理
+      </div>
+      <el-table :data="topicList.list" height="400">
+          <el-table-column prop="id" label="帖子ID" width="80" align="center"/>
+          <el-table-column prop="title" label="帖子标题" width="300" show-overflow-tooltip/>
+          <el-table-column label="帖子类型" width="120">
+              <template #default="{ row }">
+                  <div class="topic-type">
+                      <div class="type-dot" :style="{ backgroundColor: findType(row.type)?.color ?? 'grey ' }"/>
+                      <div>{{ findType(row.type)?.name ?? '未知类型' }}</div>
+                  </div>
+              </template>
+          </el-table-column >
+          <el-table-column label="帖子作者" width="120">
+              <template #default="{ row }">
+                  <div class="topic-username">
+                      <el-avatar size="20" :src="store.avatarUserUrl(row.avatar)"/>
+                      <div>{{ row.username }}</div>
+                  </div>
+              </template>
+          </el-table-column>
+          <el-table-column prop="time" label="发表时间" width="180" align="center"
+                           :formatter="row => new Date(row.time).toLocaleString()"/>
+          <el-table-column label="操作" width="270" fixed="right" align="center">
+              <template #default="{ row }">
+                  <el-button size="small" type="info" plain>屏蔽</el-button>
+                  <el-button size="small" type="warning" v-if="row.locked" @click="lockTopic(row.id, false)">取消</el-button>
+                  <el-button size="small" type="warning" v-else @click="lockTopic(row.id, true)" plain>锁定</el-button>
+                  <el-button size="small" type="success" v-if="row.top" @click="topTopic(row.id, false)">取消</el-button>
+                  <el-button size="small" type="success" v-else @click="topTopic(row.id, true)" plain>置顶</el-button>
+                  <el-button size="small" type="danger" plain @click="deleteTopic(row.id)">删除</el-button>
+              </template>
+          </el-table-column>
+          <el-table-column></el-table-column>
+      </el-table>
+      <div class="pagination">
+          <el-pagination
+              :total="topicList.total"
+              v-model:current-page="topicList.page"
+              v-model:page-size="topicList.size"
+              layout="total, sizes, prev, pager, next, jumper"/>
+      </div>
   </div>
 </template>
 
-<style scoped>
+<style lang="less" scoped>
+.forum-admin {
+    .title {
+        font-weight: bold;
+    }
 
+    .desc {
+        color: #bababa;
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .pagination{
+        margin-top: 20px;
+        display: flex;
+        justify-content: right;
+    }
+
+    .topic-username{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .topic-type {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        .type-dot{
+            height: 7px;
+            width: 7px;
+            border-radius: 50%;
+        }
+    }
+}
 </style>

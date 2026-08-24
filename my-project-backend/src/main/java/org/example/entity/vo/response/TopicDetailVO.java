@@ -17,6 +17,7 @@ public class TopicDetailVO {
     User user;
     Interact interact;
     Long comments;
+    Integer locked;
 
     @Data
     @AllArgsConstructor

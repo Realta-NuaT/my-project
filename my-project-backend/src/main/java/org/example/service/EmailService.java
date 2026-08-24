@@ -1,10 +1,11 @@
 package org.example.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.example.entity.dto.EmailRecord;
 
-import java.util.List;
 
 public interface EmailService {
     void sendVerifyEmail(String type, String email, int code);
-    List<EmailRecord> listEmailRecord();
+    Page<EmailRecord> listEmailRecord(int page, int size);
+    boolean resendEmailRecord(int id);
 }

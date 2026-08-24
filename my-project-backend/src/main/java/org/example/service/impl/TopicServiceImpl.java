@@ -105,14 +105,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             return "文章内容太多,发文失败!";
         if(!types.contains(vo.getType()))
             return "文章类型非法!";
-        baseMapper.update(null, Wrappers.<Topic>update()
+        int result = baseMapper.update(null, Wrappers.<Topic>update()
                 .eq("uid", uid)
                 .eq("id",vo.getId())
+                .eq("locked",0)
                 .set("title",vo.getTitle())
                 .set("content",vo.getContent().toString())
                 .set("type",vo.getType())
         );
-        return null;
+        return result > 0 ? null :"文章被锁定,无法进行修改";
     }
 
     @Override
@@ -187,6 +188,29 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
+    public void deleteTopic(int id) {
+        baseMapper.deleteById(id);
+        cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+        baseMapper.deleteTopicCollect(id);
+    }
+
+    @Override
+    public void setTopicTop(int tid, boolean top) {
+        baseMapper.update(null, Wrappers.<Topic>update()
+                .eq("id", tid)
+                .set("top", top)
+        );
+    }
+
+    @Override
+    public void serTopicLocked(int tid, boolean locked) {
+        baseMapper.update(null, Wrappers.<Topic>update()
+                .eq("id", tid)
+                .set("locked", locked)
+        );
+    }
+
+    @Override
     public List<TopicPreviewVO> listTopicCollects(int uid) {
         return baseMapper.collectTopics(uid)
                 .stream()
@@ -199,6 +223,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
 
+    @Override
+    public JSONObject listAllTopicByPage(int page, int size) {
+        Page<Topic> topicPage = baseMapper.selectPage(Page.of(page, size), Wrappers.<Topic>query()
+                .select("id", "title", "uid", "type", "time", "top", "locked")
+                .orderByDesc("time"));
+        List<TopicPreviewVO> list = topicPage.getRecords().stream().map(this::resolveToPreview).toList();
+        JSONObject object = new JSONObject();
+        object.put("list", list);
+        object.put("total", topicPage.getTotal());
+        return object;
+    }
 
     @Override
     public List<TopicPreviewVO> listTopicByPage(int pageNumber, int type) {
@@ -311,8 +346,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setCollect(baseMapper.interactCount(topic.getId(),"collect"));
         List<String> images =  new ArrayList<>();
         StringBuilder previewText = new StringBuilder();
-        JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
-        this.shortContent(ops,previewText,obj -> images.add(obj.toString()));
+        if(topic.getContent() != null){
+            JSONArray ops = JSONObject.parseObject(topic.getContent()).getJSONArray("ops");
+            this.shortContent(ops,previewText,obj -> images.add(obj.toString()));
+        }
         vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) : previewText.toString());
         vo.setImages(images);
         return vo;

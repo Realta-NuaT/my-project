@@ -2,17 +2,17 @@
 
 import LightCard from "@/components/LightCard.vue";
 import {
-  ArrowRightBold,
-  Calendar, CircleCheck,
-  Clock,
-  CollectionTag,
-  Compass,
-  Document,
-  Edit,
-  EditPen, FolderOpened,
-  Link,
-  Microphone,
-  Picture, Star
+    ArrowRightBold,
+    Calendar, CircleCheck,
+    Clock,
+    CollectionTag,
+    Compass,
+    Document,
+    Edit,
+    EditPen, FolderOpened,
+    Link, Lock,
+    Microphone,
+    Picture, Star
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
 import {computed, onMounted, reactive, ref, watch} from "vue";
@@ -171,6 +171,13 @@ onMounted(() => {
                 </div>
               </div>
               <div style="margin-top: 5px">
+                  <el-tag size="small" effect="dark" type="warning" style="margin-right: 10px"
+                          v-if="item.locked" disable-transitions>
+                      <el-icon>
+                          <Lock/>
+                      </el-icon>
+                      已锁定
+                  </el-tag>
                 <topic-tag :type="item.type" />
                 <span style="font-weight: bold;margin-left: 7px">{{item.title}}</span>
               </div>

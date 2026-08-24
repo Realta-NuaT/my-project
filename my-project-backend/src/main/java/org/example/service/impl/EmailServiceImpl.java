@@ -1,10 +1,12 @@
 package org.example.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.EmailRecord;
 import org.example.mapper.EmailRecordMapper;
 import org.example.service.EmailService;
+import org.example.utils.Const;
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +42,18 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public List<EmailRecord> listEmailRecord() {
-        return recordMapper.selectList(Wrappers.emptyWrapper());
+    public Page<EmailRecord> listEmailRecord(int page, int size) {
+        return recordMapper.selectPage(Page.of(page, size, true), Wrappers.emptyWrapper());
+    }
+
+    @Override
+    public boolean resendEmailRecord(int id) {
+        EmailRecord record = recordMapper.selectById(id);
+        if(record == null)
+            return false;
+        record.setStatus(0);
+        amqpTemplate.convertAndSend(Const.MQ_MAIL, record);
+        recordMapper.updateById(record);
+        return true;
     }
 }
