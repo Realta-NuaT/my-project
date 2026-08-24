@@ -4,7 +4,7 @@
 import {reactive, ref, watchEffect} from "vue";
 import {
     apiForumTopicAllList,
-    apiForumTopicDelete,
+    apiForumTopicDelete, apiForumTopicInvisible,
     apiForumTopicLocked,
     apiForumTopicTop,
     apiForumTypes
@@ -48,6 +48,13 @@ const topTopic = ( id, status ) => {
 const lockTopic = ( id, status ) => {
     apiForumTopicLocked({ id, status }, data => {
         ElMessage.success('帖子锁定状态更新成功')
+        refreshList()
+    })
+}
+
+const invisibleTopic = ( id, status ) => {
+    apiForumTopicInvisible({ id, status }, data => {
+        ElMessage.success('帖子屏蔽状态更新成功')
         refreshList()
     })
 }
@@ -97,7 +104,8 @@ apiForumTypes(data => types.value = data)
                            :formatter="row => new Date(row.time).toLocaleString()"/>
           <el-table-column label="操作" width="270" fixed="right" align="center">
               <template #default="{ row }">
-                  <el-button size="small" type="info" plain>屏蔽</el-button>
+                  <el-button size="small" type="info" v-if="row.invisible" @click="invisibleTopic(row.id, false)">取消</el-button>
+                  <el-button size="small" type="info" v-else @click="invisibleTopic(row.id, true)" plain>屏蔽</el-button>
                   <el-button size="small" type="warning" v-if="row.locked" @click="lockTopic(row.id, false)">取消</el-button>
                   <el-button size="small" type="warning" v-else @click="lockTopic(row.id, true)" plain>锁定</el-button>
                   <el-button size="small" type="success" v-if="row.top" @click="topTopic(row.id, false)">取消</el-button>

@@ -7,10 +7,7 @@ import org.example.entity.PageRestBean;
 import org.example.entity.RestBean;
 import org.example.entity.vo.response.TopicPreviewVO;
 import org.example.service.TopicService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/forum")
@@ -48,7 +45,16 @@ public class ForumAdminController {
     @PostMapping("/locked")
     public RestBean<Void> setLocked(@RequestBody JSONObject object){
 
-        service.serTopicLocked(
+        service.setTopicLocked(
+                object.getIntValue("id"),
+                object.getBooleanValue("status")
+        );
+        return  RestBean.success();
+    }
+
+    @PostMapping("/invisible")
+    public RestBean<Void> setInvisible(@RequestBody JSONObject object){
+        service.setTopicInvisible(
                 object.getIntValue("id"),
                 object.getBooleanValue("status")
         );
