@@ -21,6 +21,7 @@ import org.example.service.TopicService;
 import org.example.utils.CacheUtils;
 import org.example.utils.Const;
 import org.example.utils.FlowUtils;
+import org.example.utils.ProhibitedUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     CacheUtils cacheUtils;
+
+    @Resource
+    ProhibitedUtils  prohibitedUtils;
 
     @Resource
     AccountMapper accountMapper;
@@ -86,6 +90,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
         if(!flowUtils.limitPeriodCounterCheck(key,3,3600))
             return "发文频繁,请稍后再试!";
+        if(prohibitedUtils.containsProhibitedWord(vo.getContent()))
+            return "包含违禁词,发文失败";
         Topic topic = new Topic();
         BeanUtils.copyProperties(vo,topic);
         topic.setContent(vo.getContent().toJSONString());
@@ -105,6 +111,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             return "文章内容太多,发文失败!";
         if(!types.contains(vo.getType()))
             return "文章类型非法!";
+        if(prohibitedUtils.containsProhibitedWord(vo.getContent()))
+            return "包含违禁词,发文失败";
         int result = baseMapper.update(null, Wrappers.<Topic>update()
                 .eq("uid", uid)
                 .eq("id",vo.getId())
@@ -123,6 +131,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
         if(!flowUtils.limitPeriodCounterCheck(key,2,60))
             return "发表评论频繁,请稍后再试!";
+        if(prohibitedUtils.containsProhibitedWord(vo.getContent()))
+            return "包含违禁词,发文失败";
         TopicComment comment = new TopicComment();
         comment.setUid(uid);
         BeanUtils.copyProperties(vo,comment);
