@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
 import org.example.entity.dto.Interact;
+import org.example.entity.dto.Topic;
 import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
 import org.example.entity.vo.request.TopicUpdateVO;
@@ -127,6 +128,18 @@ public class ForumController {
     public RestBean<Void> deleteComment(@RequestParam @Min(0) int id,
                                         @RequestAttribute(Const.ATTR_USER_ID) int uid){
         topicService.deleteComment(id,uid);
+        return RestBean.success();
+    }
+
+    @GetMapping("/user-topic")
+    public RestBean<List<Topic>> userTopic(@RequestAttribute(Const.ATTR_USER_ID) int uid){
+        return RestBean.success(topicService.listTopicByUser(uid));
+    }
+
+    @GetMapping("/delete-topic")
+    public RestBean<Void> deleteTopic(@RequestParam @Min(0) int id,
+                                      @RequestAttribute(Const.ATTR_USER_ID) int uid){
+        topicService.deleteTopic(id, uid);
         return RestBean.success();
     }
 

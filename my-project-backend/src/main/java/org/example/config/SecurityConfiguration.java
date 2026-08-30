@@ -1,5 +1,6 @@
 package org.example.config;
 
+import jakarta.servlet.DispatcherType;
 import org.example.entity.RestBean;
 import org.example.entity.dto.Account;
 import org.example.entity.vo.response.AuthorizeVO;
@@ -21,6 +22,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.DispatcherTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -56,7 +59,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/images/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("api/admin/**").hasRole(Const.ROLE_ADMIN)
+                        .requestMatchers("/api/admin/**").hasRole(Const.ROLE_ADMIN)
                         .anyRequest().hasAnyRole(Const.ROLE_DEFAULT, Const.ROLE_ADMIN)
                 )
                 .formLogin(conf -> conf
@@ -73,6 +76,8 @@ public class SecurityConfiguration {
                         .accessDeniedHandler(this::handleProcess)
                         .authenticationEntryPoint(this::handleProcess)
                 )
+                .securityMatcher(new DispatcherTypeRequestMatcher(DispatcherType.REQUEST))
+                .securityMatcher(new NegatedRequestMatcher(new DispatcherTypeRequestMatcher(DispatcherType.ASYNC)))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(conf -> conf
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

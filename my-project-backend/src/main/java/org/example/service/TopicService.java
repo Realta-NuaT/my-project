@@ -1,7 +1,7 @@
 package org.example.service;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import org.example.entity.dto.Interact;
 import org.example.entity.dto.Topic;
 import org.example.entity.dto.TopicType;
@@ -18,7 +18,7 @@ import java.util.List;
 public interface TopicService extends IService<Topic> {
     List<TopicType> listTypes();
     String createTopic(int uid, TopicCreateVO vo);
-    JSONObject listAllTopicByPage(int page, int size);
+    JSONObject listAllTopicByPage(int page, int size, String keyWord);
     List<TopicPreviewVO> listTopicByPage(int page,int type);
     List<TopicTopVO> listTopTopics();
     TopicDetailVO getTopic(int tid,int uid);
@@ -29,7 +29,9 @@ public interface TopicService extends IService<Topic> {
     List<CommentVO> comments(int tid, int pageNumber);
     void deleteComment(int id, int uid);
     void deleteTopic(int id);
+    void deleteTopic(int id, int uid);
     void setTopicTop(int tid, boolean top);
     void setTopicLocked(int tid, boolean locked);
     void setTopicInvisible(int tid, boolean invisible);
+    List<Topic> listTopicByUser(int uid);
 }

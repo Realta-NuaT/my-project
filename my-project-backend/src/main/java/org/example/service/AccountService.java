@@ -1,6 +1,6 @@
 package org.example.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import org.example.entity.dto.Account;
 import org.example.entity.vo.request.*;
 import org.springframework.security.core.userdetails.UserDetailsService;

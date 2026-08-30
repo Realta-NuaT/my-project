@@ -1,6 +1,6 @@
 <script setup>
 
-import {EditPen, Unlock, User} from "@element-plus/icons-vue";
+import {EditPen, Search, Unlock, User} from "@element-plus/icons-vue";
 import {apiUserList, apiUserModifyPassword} from "@/net/api/user";
 import {reactive, ref, watchEffect} from "vue";
 import {useStore} from "@/store";
@@ -9,6 +9,8 @@ import {ElMessage, ElMessageBox} from "element-plus";
 
 const store = useStore();
 const editorRef = ref();
+const keyWord = ref('')
+const searchText = ref('')
 
 
 
@@ -46,7 +48,7 @@ function changePassword({ id, username }) {
 }
 
 watchEffect(() =>
-    apiUserList(userTable.page, userTable.size ,data => {
+    apiUserList(userTable.page, userTable.size , keyWord.value, data => {
         userTable.total = data.total;
         userTable.data = data.list
     })
@@ -55,12 +57,22 @@ watchEffect(() =>
 
 <template>
     <div class="user-admin">
-        <div class="title">
-            <el-icon><User/></el-icon>
-            论坛用户列表
-        </div>
-        <div class="desc">
-            在这里管理论坛的所有用户,包括账号信息,封禁和禁言处理
+        <div class="user-admin-header">
+            <div>
+                <div class="title">
+                    <el-icon><User/></el-icon>
+                    论坛用户列表
+                </div>
+                <div class="desc">
+                    在这里管理论坛的所有用户,包括账号信息,封禁和禁言处理
+                </div>
+            </div>
+            <div>
+                <el-input :prefix-icon="Search" placeholder="搜索帖子标题..."
+                          clearable @clear="keyWord = ''"
+                          @keydown.enter="keyWord = searchText"
+                          v-model="searchText"/>
+            </div>
         </div>
         <el-table :data="userTable.data" height="320">
             <el-table-column prop="id" label="编号" width="80"/>
@@ -119,6 +131,11 @@ watchEffect(() =>
 
 <style scoped lang="less">
 .user-admin {
+    .user-admin-header{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
     .title{
         font-weight: bold;
     }

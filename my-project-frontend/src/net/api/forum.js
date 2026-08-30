@@ -54,8 +54,8 @@ export const apiForumCollect = (success) =>
 export const apiForumCollectDelete = (tid, success) =>
     get(`/api/forum/interact?tid=${tid}&type=collect&state=false`, success)
 
-export const apiForumTopicAllList = (page, size, success) =>
-    get(`/api/admin/forum/list?page=${page}&size=${size}`, success)
+export const apiForumTopicAllList = (page, size, keyWord, success) =>
+    get(`/api/admin/forum/list?page=${page}&size=${size}&keyWord=${keyWord}`, success)
 
 export const apiForumTopicDelete = (tid, success) =>
     get(`/api/admin/forum/delete?tid=${tid}`, success)
@@ -74,3 +74,9 @@ export const apiForumProhibitedList = ( success ) =>
 
 export const apiForumProhibit = ( data, success ) =>
     post(`/api/admin/forum/prohibited-list-save`, data, success)
+
+export const apiForumUserTopic = (success) =>
+    get(`/api/forum/user-topic`, success)
+
+export const apiForumUserTopicDelete = (tid, success) =>
+    get(`/api/forum/delete-topic?id=${tid}`,success)

@@ -1,6 +1,6 @@
 package org.example.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import org.example.entity.dto.AccountPrivacy;
 import org.example.entity.vo.request.PrivacySaveVO;
 import org.example.mapper.AccountPrivacyMapper;

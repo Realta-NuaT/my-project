@@ -2,6 +2,7 @@ package org.example.controller.admin;
 
 
 import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import org.example.entity.RestBean;
@@ -41,14 +42,20 @@ public class AccountAdminController {
     private int expire;
 
     @GetMapping("/list")
-    public RestBean<JSONObject> accountList(int page, int size){
+    public RestBean<JSONObject> accountList(@RequestParam int page,
+                                            @RequestParam int size,
+                                            @RequestParam(required = false) String keyWord) {
         JSONObject object = new JSONObject();
-        List<AccountVO> list = service.page(Page.of(page, size))
+        Page<Account> accountPage = service.page(Page.of(page, size), Wrappers.<Account>query()
+                .eq(keyWord != null, "id", keyWord).or()
+                .like(keyWord != null, "username", "%" + keyWord + "%")
+        );
+        List<AccountVO> list = accountPage
                 .getRecords()
                 .stream()
                 .map(a -> a.asViewObject(AccountVO.class))
                 .toList();
-        object.put("total", service.count());
+        object.put("total", accountPage.getTotal());
         object.put("list", list);
         return RestBean.success(object);
     }

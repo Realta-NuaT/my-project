@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.*;
@@ -97,6 +97,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
+        topic.createIntro();
         if (this.save(topic)) {
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
@@ -120,6 +121,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 .set("title",vo.getTitle())
                 .set("content",vo.getContent().toString())
                 .set("type",vo.getType())
+                .set("intro",Topic.recreateIntro(vo.getContent()))
         );
         return result > 0 ? null :"文章被锁定,无法进行修改";
     }
@@ -205,6 +207,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
+    public void deleteTopic(int id, int uid) {
+        int result = baseMapper.delete(Wrappers.<Topic>query()
+                .eq("id", id)
+                .eq("uid", uid));
+        if(result > 0) {
+            cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+            baseMapper.deleteTopicCollect(id);
+        }
+    }
+
+    @Override
     public void setTopicTop(int tid, boolean top) {
         baseMapper.update(null, Wrappers.<Topic>update()
                 .eq("id", tid)
@@ -242,9 +255,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
-    public JSONObject listAllTopicByPage(int page, int size) {
+    public JSONObject listAllTopicByPage(int page, int size, String keyWord) {
         Page<Topic> topicPage = baseMapper.selectPage(Page.of(page, size), Wrappers.<Topic>query()
                 .select("id", "title", "uid", "type", "time", "top", "locked", "invisible")
+                .like(keyWord != null, "title", "%" + keyWord + "%")
                 .orderByDesc("time"));
         List<TopicPreviewVO> list = topicPage.getRecords().stream().map(this::resolveToPreview).toList();
         JSONObject object = new JSONObject();
@@ -315,6 +329,11 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             template.opsForHash().put(type, interact.toKey(), Boolean.toString(state));
             this.saveInteractSchedule(type);
         }
+    }
+
+    @Override
+    public List<Topic> listTopicByUser(int uid) {
+        return baseMapper.selectList(Wrappers.<Topic>query().eq("uid",uid));
     }
 
     private boolean hasInteract(int tid, int uid, String type){

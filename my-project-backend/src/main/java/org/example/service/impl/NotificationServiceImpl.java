@@ -1,7 +1,7 @@
 package org.example.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.Notification;
 import org.example.entity.vo.response.NotificationVO;

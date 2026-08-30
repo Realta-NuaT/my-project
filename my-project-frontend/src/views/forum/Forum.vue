@@ -1,6 +1,5 @@
 <script setup>
 
-import {get} from "@/net";
 import {useStore} from "@/store";
 import {apiForumTypes} from "@/net/api/forum";
 

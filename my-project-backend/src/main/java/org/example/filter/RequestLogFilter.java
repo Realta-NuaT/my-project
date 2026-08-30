@@ -29,7 +29,7 @@ public class RequestLogFilter extends OncePerRequestFilter {
     @Resource
     SnowflakeIdGenerator generator;
 
-    private final Set<String> ignores = Set.of("/swagger-ui", "/v3/api-docs","/images");
+    private final Set<String> ignores = Set.of("/swagger-ui", "/v3/api-docs","/images","/api/ai/chat");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
