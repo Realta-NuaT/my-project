@@ -26,20 +26,6 @@ const adminMenu = [
       {title:'用户管理', icon:User,index:'/admin/user'},
       {title:'邮件管理', icon:Message,index:'/admin/email'},
       {title:'帖子广场管理', icon:ChatDotSquare,index:'/admin/forum'},
-      {title:'失物招领管理', icon:Bell,index:''},
-      {title:'校园活动管理', icon:Notification,index:''},
-      {title:'表白墙管理', icon:Umbrella,index:''},
-      {title:'合作机构管理', icon:School,index:''},
-    ]
-  },{
-    title:'探索与发现管理',
-    icon:Position,
-    sub:[
-      {title:'成绩管理', icon:Document,index:''},
-      {title:'课程表管理', icon:Files,index:''},
-      {title:'教务通知管理', icon:Monitor,index:''},
-      {title:'在线图书馆管理', icon:Collection,index:''},
-      {title:'预约教室管理', icon:DataLine,index:''},
     ]
   }
 ]

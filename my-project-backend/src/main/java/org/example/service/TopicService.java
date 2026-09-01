@@ -7,16 +7,18 @@ import org.example.entity.dto.Topic;
 import org.example.entity.dto.TopicType;
 import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
+import org.example.entity.vo.request.TopicTypeCreateVO;
 import org.example.entity.vo.request.TopicUpdateVO;
-import org.example.entity.vo.response.CommentVO;
-import org.example.entity.vo.response.TopicDetailVO;
-import org.example.entity.vo.response.TopicPreviewVO;
-import org.example.entity.vo.response.TopicTopVO;
+import org.example.entity.vo.response.*;
 
 import java.util.List;
 
 public interface TopicService extends IService<Topic> {
     List<TopicType> listTypes();
+    void updateTopicType(TopicTypeVO vo);
+    void deleteTopicType(int id);
+    void createTopicType(TopicTypeCreateVO vo);
+    void changeTopicType(int tid, int type);
     String createTopic(int uid, TopicCreateVO vo);
     JSONObject listAllTopicByPage(int page, int size, String keyWord);
     List<TopicPreviewVO> listTopicByPage(int page,int type);
@@ -34,4 +36,5 @@ public interface TopicService extends IService<Topic> {
     void setTopicLocked(int tid, boolean locked);
     void setTopicInvisible(int tid, boolean invisible);
     List<Topic> listTopicByUser(int uid);
+    List<TopicSearchVO> searchTopic(String keyword);
 }

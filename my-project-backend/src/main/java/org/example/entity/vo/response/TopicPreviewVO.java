@@ -18,7 +18,7 @@ public class TopicPreviewVO {
     String avatar;
     int like;
     int collect;
-    int top;
-    int locked;
-    int invisible;
+    Integer top;
+    Integer locked;
+    Integer invisible;
 }

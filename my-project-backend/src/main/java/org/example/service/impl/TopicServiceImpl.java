@@ -8,14 +8,14 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.example.entity.dto.*;
+import org.example.entity.es.TopicDocument;
 import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
+import org.example.entity.vo.request.TopicTypeCreateVO;
 import org.example.entity.vo.request.TopicUpdateVO;
-import org.example.entity.vo.response.CommentVO;
-import org.example.entity.vo.response.TopicDetailVO;
-import org.example.entity.vo.response.TopicPreviewVO;
-import org.example.entity.vo.response.TopicTopVO;
+import org.example.entity.vo.response.*;
 import org.example.mapper.*;
+import org.example.repository.TopicRepository;
 import org.example.service.NotificationService;
 import org.example.service.TopicService;
 import org.example.utils.CacheUtils;
@@ -23,6 +23,8 @@ import org.example.utils.Const;
 import org.example.utils.FlowUtils;
 import org.example.utils.ProhibitedUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements TopicService {
+
+    @Value("${spring.topic.create.frequency}")
+    Integer createFrequency;
+
+    @Value("${spring.topic.create.period}")
+    Integer  createPeriod;
 
     @Resource
     TopicTypeMapper mapper;
@@ -66,6 +74,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     @Resource
     NotificationService  notificationService;
 
+    @Resource
+    TopicRepository  topicRepository;
+
     private Set<Integer> types = null;
     @PostConstruct
     private void initTypes(){
@@ -82,13 +93,47 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     @Override
+    public void updateTopicType(TopicTypeVO vo) {
+        TopicType topicType = mapper.selectById(vo.getId());
+        BeanUtils.copyProperties(vo, topicType);
+        mapper.updateById(topicType);
+    }
+
+    @Override
+    public void deleteTopicType(int id) {
+        TopicType type = mapper.selectById(id);
+        if( mapper.deleteById(id) > 0){
+            List<Topic> list = baseMapper.selectList(Wrappers.<Topic>query().eq("type", type.getId()));
+            list.forEach(item -> deleteTopic(item.getId()));
+        }
+    }
+
+    @Override
+    public void createTopicType(TopicTypeCreateVO vo) {
+        TopicType type = new TopicType();
+        BeanUtils.copyProperties(vo, type);
+        mapper.insert(type);
+
+    }
+
+    @Override
+    public void changeTopicType(int tid, int type) {
+        if(baseMapper.update(null,Wrappers.<Topic>update()
+                .eq("id", tid)
+                .set("type", type)
+        ) > 1){
+            cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
+        }
+    }
+
+    @Override
     public String createTopic(int uid, TopicCreateVO vo) {
         if(!textLimitCheck(vo.getContent(),20000))
             return "文章内容太多,发文失败!";
         if(!types.contains(vo.getType()))
             return "文章类型非法!";
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
-        if(!flowUtils.limitPeriodCounterCheck(key,3,3600))
+        if(!flowUtils.limitPeriodCounterCheck(key,createFrequency,createPeriod))
             return "发文频繁,请稍后再试!";
         if(prohibitedUtils.containsProhibitedWord(vo.getContent()))
             return "包含违禁词,发文失败";
@@ -97,6 +142,8 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
+        topic.setInvisible(0);
+        topic.setLocked(0);
         topic.createIntro();
         if (this.save(topic)) {
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
@@ -336,6 +383,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return baseMapper.selectList(Wrappers.<Topic>query().eq("uid",uid));
     }
 
+    @Override
+    public List<TopicSearchVO> searchTopic(String keyword) {
+        List<SearchHit<TopicDocument>> list = topicRepository.findByTitleOrIntro(keyword);
+        return list.stream().map(item ->{
+            TopicSearchVO vo = new TopicSearchVO();
+            BeanUtils.copyProperties(item.getContent(),vo);
+            vo.setHighlight(item.getHighlightFields());
+            return vo;
+        }).toList();
+    }
+
     private boolean hasInteract(int tid, int uid, String type){
         String key = tid + ":" + uid;
         if(template.opsForHash().hasKey(type,key))
@@ -385,8 +443,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     private TopicPreviewVO resolveToPreview(Topic topic){
         TopicPreviewVO vo = new TopicPreviewVO();
-        BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()),vo);
-        BeanUtils.copyProperties(topic,vo);
+        Account account = accountMapper.selectById(topic.getUid());
+        BeanUtils.copyProperties(account, vo);
+        BeanUtils.copyProperties(topic, vo);
         vo.setLike(baseMapper.interactCount(topic.getId(),"like"));
         vo.setCollect(baseMapper.interactCount(topic.getId(),"collect"));
         List<String> images =  new ArrayList<>();

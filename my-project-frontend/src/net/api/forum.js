@@ -21,18 +21,18 @@ export const apiForumInteract = (tid, type, topic, message) => {
 }
 
 export const apiForumUpdateTopic = (data, success) =>
-    post('api/forum/update-topic',data, success)
+    post('/api/forum/update-topic',data, success)
 
 
 export const apiForumComments = (tid, page, success) =>
-    get(`api/forum/comments?tid=${tid}&page=${page}`,success)
+    get(`/api/forum/comments?tid=${tid}&page=${page}`,success)
 
 export const apiForumCommentDelete = (id, success) =>
-    get(`api/forum/delete-comment?id=${id}`, success)
+    get(`/api/forum/delete-comment?id=${id}`, success)
 
 
 export const apiForumCommentSubmit = (data, success) =>
-    post('api/forum/add-comment', data, success)
+    post('/api/forum/add-comment', data, success)
 
 
 export const apiForumTopicCreate = (data, success) =>
@@ -40,7 +40,7 @@ export const apiForumTopicCreate = (data, success) =>
 
 
 export const apiForumTopTopics = (success) =>
-    get('api/forum/top-topic',success)
+    get('/api/forum/top-topic',success)
 
 export  const apiForumTopicList = (page, type, success) =>
     get(`/api/forum/list-topic?page=${page}&type=${type}`, success)
@@ -80,3 +80,18 @@ export const apiForumUserTopic = (success) =>
 
 export const apiForumUserTopicDelete = (tid, success) =>
     get(`/api/forum/delete-topic?id=${tid}`,success)
+
+export const apiTopicSearch = (keyword, success) =>
+    get(`/api/forum/search-topic?keyword=${keyword}`,success)
+
+export const apiTopicTypeUpdate = (data, success) =>
+    post('/api/forum/update-type',data, success)
+
+export const apiTopicTypeDelete = (id, success) =>
+    get(`/api/forum/delete-type?id=${id}`, success)
+
+export const apiTopicTypeCreate = (data, success) =>
+    post(`/api/forum/create-type`, data, success)
+
+export const apiTopicTypeChange = (tid, type, success) =>
+    get(`/api/forum/change-topic-type?tid=${tid}&type=${type}`, success)

@@ -124,7 +124,7 @@ function fetchPost(url,data){
 }
 
 function  login(username,password,remember,success,failure=defaultFailure){
-    internalPost('api/auth/login',{
+    internalPost('/api/auth/login',{
         username:username,
         password:password,
     },{

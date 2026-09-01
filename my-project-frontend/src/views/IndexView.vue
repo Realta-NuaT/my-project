@@ -13,6 +13,10 @@ import LightCard from "@/components/LightCard.vue";
 import UserInfo from "@/components/UserInfo.vue";
 import {apiNotificationDelete, apiNotificationDeleteAll, apiNotificationList} from "@/net/api/user";
 import AiChatWindow from "@/components/AiChatWindow.vue";
+import {apiForumTypes, apiTopicSearch} from "@/net/api/forum";
+import TopicTag from "@/components/TopicTag.vue";
+import {useStore} from "@/store";
+import router from "@/router";
 const loading = inject('userLoading');
 const searchInput = reactive({
   type:'1',
@@ -21,26 +25,14 @@ const searchInput = reactive({
 
 const notification =ref([])
 
+const store = useStore();
+
 const userMenu =  [
   {
     title:'校园论坛',
     icon:Location,
     sub:[
       {title:'帖子广场', icon:ChatDotSquare,index:'/index'},
-      {title:'失物招领', icon:Bell,index:''},
-      {title:'校园活动', icon:Notification,index:''},
-      {title:'表白墙', icon:Umbrella,index:''},
-      {title:'合作机构', icon:School,index:''},
-    ]
-  },{
-    title:'探索与发现',
-    icon:Position,
-    sub:[
-      {title:'成绩查询', icon:Document,index:''},
-      {title:'班级课程表', icon:Files,index:''},
-      {title:'教务通知', icon:Monitor,index:''},
-      {title:'在线图书馆', icon:Collection,index:''},
-      {title:'预约教室', icon:DataLine,index:''},
     ]
   },{
     title:'个人设置',
@@ -57,7 +49,20 @@ const loadNotification =
     () => apiNotificationList(notification)
 loadNotification()
 
-function confirmNotification(id,url){
+const searchTopic = (keyword, callback) => {
+    if(!keyword){
+        return;
+    }
+    apiTopicSearch(keyword, data => {
+        callback(data)
+    })
+}
+
+const toTopic = ({ id }) => {
+    router.push('/index/topic-detail/' + id);
+}
+
+    function confirmNotification(id,url){
   apiNotificationDelete(id,() => {
     loadNotification()
     window.open(url)
@@ -66,6 +71,13 @@ function confirmNotification(id,url){
 function deleteAllNotification(){
   apiNotificationDeleteAll(loadNotification)
 }
+
+apiForumTypes(data => {
+    const array = []
+    array.push({name: '全部', id: 0, color: 'linear-gradient(45deg, white, red, orange, gold, green, blue)'})
+    data.forEach(d => array.push(d))
+    store.forum.types = array
+})
 
 </script>
 <template>
@@ -77,10 +89,30 @@ function deleteAllNotification(){
           <el-image class="logo" src="https://element-plus.org/images/element-plus-logo.svg"/>
         </div>
         <div style="flex: 1;padding: 0 20px;text-align: center">
-          <el-input v-model="searchInput.text" style="width: 100%;max-width: 500px" placeholder="搜索论坛相关内容...">
+          <el-autocomplete v-model="searchInput.text" style="width: 100%;max-width: 500px"
+                           fit-input-width
+                           :fetch-suggestions="searchTopic"
+                           @select="toTopic"
+                           placeholder="搜索论坛相关内容...">
             <template #prefix>
               <el-icon><Search/></el-icon>
             </template>
+              <template #default="{ item }">
+                  <div class="search-item">
+                      <div class="title" v-if="item.highlight.title">
+                          <topic-tag style="margin-right: 10px" :type="item.type"></topic-tag>
+                          <span v-html="item.highlight.title"></span>
+                      </div>
+                      <div class="title" v-else>
+                          <topic-tag style="margin-right: 10px" :type="item.type"></topic-tag>
+                          {{ item.title }}
+                      </div>
+                      <div class="desc" v-if="item.highlight.intro" v-html="item.highlight.intro"></div>
+                      <div class="desc" v-else>
+                          {{ item.intro }}
+                      </div>
+                  </div>
+              </template>
             <template #append>
               <el-select v-model="searchInput.type" style="width: 120px">
                 <el-option value="1" label="帖子广场"/>
@@ -89,7 +121,7 @@ function deleteAllNotification(){
                 <el-option value="4" label="教务通知"/>
               </el-select>
             </template>
-          </el-input>
+          </el-autocomplete>
         </div>
         <user-info>
           <el-popover placement="bottom" :width="350" trigger="click" >
@@ -167,6 +199,38 @@ function deleteAllNotification(){
 </template>
 
 <style lang="less" scoped>
+.search-item{
+    line-height: 1.5;
+    padding: 10px;
+
+    :deep(em){
+        color: #1e1d1d;
+        background-color: #dfdf67;
+        font-style: normal;
+        border-radius: 4px;
+        padding: 0 4px;
+        display: inline-block;
+    }
+
+    .title{
+        font-size: 15px;
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+    }
+    .desc{
+        font-size: 13px;
+        white-space: pre-wrap;
+        color: grey;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+}
 .notification-item{
   margin-top: 5px;
   margin-bottom: 10px;

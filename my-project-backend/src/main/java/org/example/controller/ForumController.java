@@ -12,6 +12,7 @@ import org.example.entity.dto.Interact;
 import org.example.entity.dto.Topic;
 import org.example.entity.vo.request.AddCommentVO;
 import org.example.entity.vo.request.TopicCreateVO;
+import org.example.entity.vo.request.TopicTypeCreateVO;
 import org.example.entity.vo.request.TopicUpdateVO;
 import org.example.entity.vo.response.*;
 import org.example.mapper.TopicTypeMapper;
@@ -143,4 +144,33 @@ public class ForumController {
         return RestBean.success();
     }
 
+    @GetMapping("/search-topic")
+    public RestBean<List<TopicSearchVO>>  searchTopic(@RequestParam String keyword){
+        return RestBean.success(topicService.searchTopic(keyword));
+    }
+
+    @PostMapping("/update-type")
+    public RestBean<Void> updateType(@RequestBody TopicTypeVO vo){
+        topicService.updateTopicType(vo);
+        return RestBean.success();
+    }
+
+    @GetMapping("/delete-type")
+    public RestBean<Void> deleteType(@RequestParam int id){
+        topicService.deleteTopicType(id);
+        return RestBean.success();
+    }
+
+    @PostMapping("/create-type")
+    public RestBean<Void> createType(@RequestBody TopicTypeCreateVO vo){
+        topicService.createTopicType(vo);
+        return RestBean.success();
+    }
+
+    @GetMapping("change-topic-type")
+    public RestBean<Void> changeTopicType(@RequestParam int tid,
+                                          @RequestParam int type){
+        topicService.changeTopicType(tid,type);
+        return RestBean.success();
+    }
 }

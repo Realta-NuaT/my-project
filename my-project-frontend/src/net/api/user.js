@@ -46,10 +46,10 @@ export const apiAuthAskCode = (email, type='register', coldTime, timer, isEmailV
 }
 
 export const apiAuthResetConform = (data, activeRef) =>
-    post('api/auth/reset-confirm',data,()=>activeRef.value++)
+    post('/api/auth/reset-confirm',data,()=>activeRef.value++)
 
 export const apiAuthResetPassword = (data) => {
-    post('api/auth/reset-password', data, ()=>{
+    post('/api/auth/reset-password', data, ()=>{
             ElMessage.success('密码重置成功,请重新登陆')
             router.push('/')
         }
@@ -61,7 +61,7 @@ export const apiUserPrivacy = ( success ) =>
 
 export const apiUserPrivacySave = (data, loadingRef) =>{
     loadingRef.value = true
-    post('api/user/save-privacy',data,()=>{
+    post('/api/user/save-privacy',data,()=>{
         ElMessage.success('隐私设置修改成功!')
         loadingRef.value = false
     })
@@ -75,10 +75,10 @@ export const apiUserDetails = ( success ) => {
 }
 
 export const apiUserDetailSave = (form, success, failure) =>
-    post('api/user/save-details',form,success, failure)
+    post('/api/user/save-details',form,success, failure)
 
 export const apiUserModifyEmail = (form, success) =>
-    post('api/user/modify-email',form,success,(data)=>{ElMessage.warning(data)})
+    post('/api/user/modify-email',form,success,(data)=>{ElMessage.warning(data)})
 
 export const apiNotificationList = (notification) =>
     get('/api/notification/list',data=> notification.value = data )
@@ -87,17 +87,17 @@ export const apiNotificationDeleteAll = (success) =>
     get('/api/notification/delete-all',success)
 
 export const apiNotificationDelete = (id, success) =>
-    get(`api/notification/delete?id=${id}`,success)
+    get(`/api/notification/delete?id=${id}`,success)
 
 export const apiUserList = (page, size, keyWord, success) =>
-    get(`api/admin/user/list?page=${page}&size=${size}&keyWord=${keyWord}`, success)
+    get(`/api/admin/user/list?page=${page}&size=${size}&keyWord=${keyWord}`, success)
 
 export const apiUserDetailTotal = (id, success) =>
-    get(`api/admin/user/detail?id=${id}`,success)
+    get(`/api/admin/user/detail?id=${id}`,success)
 
 export const apiUserSave = (data, success) =>
-    post('api/admin/user/save?',data, success)
+    post('/api/admin/user/save?',data, success)
 
 export const apiUserModifyPassword = (data, success) =>
-    post('api/admin/user/change-password',data,success)
+    post('/api/admin/user/change-password',data,success)
 

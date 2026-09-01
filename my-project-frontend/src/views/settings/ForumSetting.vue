@@ -1,7 +1,7 @@
 <script setup>
 
 
-import {apiForumTopicDelete, apiForumTypes, apiForumUserTopic} from "@/net/api/forum";
+import {apiForumUserTopic, apiForumUserTopicDelete} from "@/net/api/forum";
 import {ref} from "vue";
 import Card from "@/components/Card.vue";
 import {useStore} from "@/store";
@@ -16,7 +16,7 @@ const deleteTopic = (id) => {
     ElMessageBox.confirm('您确定要删除帖子,删除后帖子将永远无法找到?','删除帖子',{
         callback: value =>{
             if(value === 'confirm'){
-                apiForumTopicDelete(id, () => {
+                apiForumUserTopicDelete(id, () => {
                     ElMessage.success('帖子删除成功')
                     refreshList()
                 })
@@ -27,7 +27,6 @@ const deleteTopic = (id) => {
 
 const refreshList = () => apiForumUserTopic(data => list.value = data)
 refreshList()
-apiForumTypes(data => store.forum.types = data)
 
 </script>
 

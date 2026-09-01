@@ -49,11 +49,11 @@ function userLogout(){
     <el-dropdown>
       <el-avatar :src="store.avatarUrl" />
       <template #dropdown>
-        <el-dropdown-item>
+        <el-dropdown-item @click="router.push('/index/user-setting')" v-if="!isAdminPage">
           <el-icon><Operation/></el-icon>
           个人设置
         </el-dropdown-item>
-        <el-dropdown-item>
+        <el-dropdown-item @click="router.push('/index/user-setting')" v-if="!isAdminPage">
           <el-icon><Message/></el-icon>
           消息列表
         </el-dropdown-item>
