@@ -1,0 +1,24 @@
+# IDEA
+.idea/
+*.iml
+
+# JetBrains Junie
+.junie/
+
+# Java
+**/target/
+
+# Vue
+**/node_modules/
+**/dist/
+
+# Logs
+log/
+**/log/
+*.log
+
+# Environment / sensitive configuration
+.env
+.env.*
+application-dev.yml
+application-prod.yml
